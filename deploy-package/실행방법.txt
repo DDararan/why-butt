@@ -1,0 +1,32 @@
+🍊 위키 시스템 v1.0 실행 방법
+=====================================
+
+📋 사전 요구사항
+- Java 17 이상 설치 필요
+- 다운로드: https://adoptium.net/
+
+🚀 실행 방법
+1. run-wiki.bat 파일을 더블클릭
+2. 브라우저에서 http://localhost:8181 접속
+
+🔧 수동 실행 (명령어)
+java -jar orange-wiki-1.0.0-SNAPSHOT.jar
+
+🛑 종료 방법
+- 명령창에서 Ctrl+C
+- 또는 명령어: taskkill /F /IM java.exe
+
+📁 파일 설명
+- orange-wiki-1.0.0-SNAPSHOT.jar : 메인 실행 파일
+- run-wiki.bat : 간편 실행 스크립트
+- wikidb.mv.db : 데이터베이스 파일
+- uploads/ : 업로드된 파일 저장소
+
+✨ 주요 기능
+- 위키 페이지 작성/편집
+- 파일 첨부
+- 댓글 시스템
+- 실시간 검색
+- H2 데이터베이스 콘솔 (/h2-console)
+
+📞 문의: 개발자에게 연락 

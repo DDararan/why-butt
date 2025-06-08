@@ -1,0 +1,160 @@
+/* 에디터 내부 스타일링 */
+.milkdown {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #212529;
+  line-height: 1.6;
+}
+
+.milkdown h1 {
+  font-size: 2em;
+  margin: 1em 0 0.5em;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.3em;
+}
+
+.milkdown h2 {
+  font-size: 1.5em;
+  margin: 1em 0 0.5em;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.3em;
+}
+
+.milkdown h3 {
+  font-size: 1.25em;
+  margin: 1em 0 0.5em;
+}
+
+.milkdown p {
+  margin: 0 0 1em;
+}
+
+.milkdown blockquote {
+  border-left: 4px solid #339af0;
+  margin: 0 0 1em;
+  padding: 0.5em 0 0.5em 1em;
+  color: #495057;
+  background: #f8f9fa;
+}
+
+.milkdown pre {
+  background: #f8f9fa;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+
+.milkdown code {
+  background: #f8f9fa;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.milkdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 1em;
+}
+
+.milkdown th,
+.milkdown td {
+  border: 1px solid #dee2e6;
+  padding: 8px;
+  text-align: left;
+}
+
+.milkdown th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.milkdown ul,
+.milkdown ol {
+  padding-left: 2em;
+  margin: 0 0 1em;
+}
+
+.milkdown li {
+  margin: 0.2em 0;
+}
+
+.milkdown hr {
+  border: none;
+  border-top: 2px solid #e9ecef;
+  margin: 2em 0;
+}
+
+/* 체크박스 스타일링 */
+.milkdown input[type="checkbox"] {
+  margin: 0 0.5em 0.2em 0;
+  vertical-align: middle;
+}
+
+/* 링크 스타일링 */
+.milkdown a {
+  color: #339af0;
+  text-decoration: none;
+}
+
+.milkdown a:hover {
+  text-decoration: underline;
+}
+
+/* 이미지 스타일링 */
+.milkdown img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0;
+  border-radius: 4px;
+}
+
+/* 수학 수식 스타일링 */
+.milkdown .math-block {
+  margin: 1em 0;
+  padding: 1em;
+  background: #f8f9fa;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* 다이어그램 스타일링 */
+.milkdown .diagram {
+  margin: 1em 0;
+  text-align: center;
+}
+
+.milkdown .diagram svg {
+  max-width: 100%;
+}
+
+/* 이모지 스타일링 */
+.milkdown .emoji {
+  display: inline-block;
+  vertical-align: -0.1em;
+  font-size: 1.2em;
+}
+
+/* 슬래시 메뉴 스타일링 */
+.milkdown-slash-menu {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  min-width: 180px;
+}
+
+.milkdown-slash-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #495057;
+  font-size: 14px;
+}
+
+.milkdown-slash-menu-item:hover {
+  background: #f1f3f5;
+} 

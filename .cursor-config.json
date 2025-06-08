@@ -1,0 +1,9 @@
+{
+  "project": "DDARARAN",
+  "instructions": [
+    "You are working on a smart SM documentation assistant project named DDARARAN.",
+    "Use EXAWON-based AI via API to answer and summarize conversations.",
+    "This environment includes Node.js for server, PostgreSQL for database, and Python for AI API.",
+    "Files related to API are in /api, database schema is in /prisma, and logs are in /logs."
+  ]
+}
