@@ -19,6 +19,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
+    @Value("${file.upload.path:uploads}")
+    private String uploadPath;
+
     /**
      * 정적 리소스 핸들러 설정
      * React 빌드 파일들이 올바르게 서빙되도록 설정
@@ -39,6 +42,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/api/files/**")
                 .addResourceLocations("file:" + uploadDir + "/")
                 .setCachePeriod(3600);
+
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + uploadPath + "/");
     }
 
     @Override

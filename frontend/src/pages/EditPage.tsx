@@ -18,7 +18,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { wikiService } from '../services/wikiService';
 import { WikiPageSummary } from '../types/wiki';
 import { usePageTree } from '../contexts/PageTreeContext';
-import TipTapEditor from '../components/TipTapEditor';
+import Editor from '../components/Editor';
 import '../styles/markdown.css';
 
 interface LocationState {
@@ -345,6 +345,10 @@ const EditPage: React.FC = () => {
     }
   };
 
+  const handleEditorChange = (newContent: string) => {
+    setContent(newContent);
+  };
+
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -408,9 +412,9 @@ const EditPage: React.FC = () => {
           </Grid>
 
           <Box sx={{ mt: 2 }}>
-            <TipTapEditor
+            <Editor
               defaultValue={content}
-              onChange={setContent}
+              onChange={handleEditorChange}
             />
           </Box>
 

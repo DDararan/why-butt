@@ -8,6 +8,7 @@ import WikiPage from './pages/WikiPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './components/LoginPage';
 import { PageTreeProvider } from './contexts/PageTreeContext';
+import PageEditor from './components/PageEditor';
 
 interface User {
   staffId: string;
@@ -87,6 +88,8 @@ const App: React.FC = () => {
               <Route path="/wiki/:title/edit" element={<EditPage />} />
               <Route path="/wiki/new" element={<EditPage />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/pages/new" element={<PageEditor />} />
+              <Route path="/pages/:id/edit" element={<PageEditor />} />
             </Routes>
           </Layout>
         </Router>
