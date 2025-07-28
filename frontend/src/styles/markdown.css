@@ -1,0 +1,379 @@
+/* 마크다운 프리뷰 스타일링 */
+.markdown-preview {
+  line-height: 1.2;
+  color: #333;
+  overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: #e65100;
+}
+
+.markdown-preview h1 {
+  font-size: 2em;
+  border-bottom: 2px solid #e65100;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #ff9800;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview h3 {
+  font-size: 1.3em;
+}
+
+.markdown-preview p {
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+
+.markdown-preview li {
+  margin-bottom: 0.25em;
+}
+
+.markdown-preview blockquote {
+  border-left: 4px solid #ff9800;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #666;
+  background-color: #fff3e0;
+  padding: 1em;
+  border-radius: 4px;
+}
+
+.markdown-preview code {
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #d84315;
+}
+
+.markdown-preview pre {
+  background-color: #f5f5f5;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1em 0;
+  border: 1px solid #e0e0e0;
+}
+
+.markdown-preview pre code {
+  background-color: transparent;
+  padding: 0;
+  color: #333;
+}
+
+.markdown-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.markdown-preview table thead tr {
+  background-color: #ff9800;
+  color: #ffffff;
+  text-align: left;
+}
+
+.markdown-preview table th,
+.markdown-preview table td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+}
+
+.markdown-preview table tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+.markdown-preview table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+.markdown-preview table tbody tr:last-of-type {
+  border-bottom: 2px solid #ff9800;
+}
+
+.markdown-preview table tbody tr:hover {
+  background-color: #fff3e0;
+  transition: background-color 0.3s ease;
+}
+
+.markdown-preview a {
+  color: #e65100;
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview strong {
+  font-weight: 600;
+  color: #333;
+}
+
+.markdown-preview em {
+  font-style: italic;
+  color: #666;
+}
+
+.markdown-preview hr {
+  border: none;
+  height: 2px;
+  background-color: #ff9800;
+  margin: 2em 0;
+}
+
+/* 이미지 스타일링 */
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.markdown-preview img:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+/* 마크다운 에디터 스타일링 */
+.markdown-editor {
+  font-family: 'Courier New', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  background-color: #fafafa !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px !important;
+}
+
+.markdown-editor:focus {
+  border-color: #ff9800 !important;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2) !important;
+}
+
+/* 마크다운 도구 버튼 애니메이션 */
+.markdown-toolbar-chip {
+  transition: all 0.2s ease !important;
+}
+
+.markdown-toolbar-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 고급 마크다운 스타일 추가 */
+
+/* 향상된 테이블 스타일링 */
+.markdown-preview .markdown-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.markdown-preview .markdown-table th,
+.markdown-preview .markdown-table td {
+  border: 1px solid #e0e0e0;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.markdown-preview .markdown-table th {
+  background-color: #fff3e0;
+  font-weight: 600;
+  color: #e65100;
+}
+
+.markdown-preview .markdown-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.markdown-preview .markdown-table tbody tr:hover {
+  background-color: #fff3e0;
+}
+
+/* 체크리스트 스타일링 */
+.markdown-preview ul li input[type="checkbox"] {
+  margin-right: 8px;
+  margin-top: 2px;
+  transform: scale(1.2);
+}
+
+.markdown-preview ul li:has(input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.5em;
+}
+
+/* 취소선 스타일 */
+.markdown-preview del {
+  text-decoration: line-through;
+  opacity: 0.7;
+  color: #666;
+}
+
+/* 하이라이트 스타일 */
+.markdown-preview mark {
+  background-color: #ffeb3b;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #333;
+}
+
+/* 키보드 키 스타일 */
+.markdown-preview kbd {
+  background-color: #f0f0f0;
+  border: 1px solid #d0d0d0;
+  border-bottom: 3px solid #b0b0b0;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: #333;
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.9em;
+  font-weight: bold;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+/* 알림 블록 스타일 */
+.markdown-preview blockquote p:first-child strong:first-child {
+  font-size: 0.9em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* 접기/펼치기 블록 */
+.markdown-preview details {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  background-color: #fafafa;
+}
+
+.markdown-preview details summary {
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background-color: #fff3e0;
+  border-radius: 4px;
+  color: #e65100;
+  border: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.markdown-preview details summary:hover {
+  background-color: #ffe0b2;
+}
+
+.markdown-preview details[open] summary {
+  margin-bottom: 16px;
+}
+
+/* 수학 공식 스타일 */
+.markdown-preview .katex {
+  font-size: 1.1em;
+}
+
+.markdown-preview .katex-display {
+  margin: 20px 0;
+  text-align: center;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+/* 코드 하이라이팅 향상 */
+.markdown-preview pre {
+  position: relative;
+  overflow-x: auto;
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.markdown-preview pre code {
+  display: block;
+  line-height: 1.6;
+  background-color: transparent !important;
+}
+
+/* 인라인 코드 향상 */
+.markdown-preview code:not(pre code) {
+  background-color: #f6f8fa !important;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  font-size: 85%;
+  margin: 0 2px;
+  padding: 0.2em 0.4em;
+  color: #d84315 !important;
+}
+
+/* 링크 스타일 향상 */
+.markdown-preview a {
+  color: #e65100 !important;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.markdown-preview a:hover {
+  border-bottom-color: #e65100;
+  background-color: #fff3e0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+/* 수평선 스타일 향상 */
+.markdown-preview hr {
+  height: 3px;
+  padding: 0;
+  margin: 24px 0;
+  background: linear-gradient(90deg, #ff9800, #e65100, #ff9800);
+  border: 0;
+  border-radius: 2px;
+}
+
+/* 표 반응형 스타일링 */
+@media screen and (max-width: 600px) {
+  .markdown-preview table {
+    min-width: 100%;
+    font-size: 0.8em;
+  }
+
+  .markdown-preview table th,
+  .markdown-preview table td {
+    padding: 8px 10px;
+  }
+} 

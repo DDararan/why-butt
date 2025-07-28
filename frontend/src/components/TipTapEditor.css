@@ -1,0 +1,368 @@
+.tiptap-editor {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tiptap-toolbar {
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tiptap-toolbar button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.tiptap-toolbar button:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.tiptap-toolbar button.is-active {
+  background-color: #e65100;
+  color: white;
+  border-color: #e65100;
+}
+
+.tiptap-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e0e0e0;
+  margin: 0 4px;
+}
+
+.collaboration-cursor__caret {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 2px solid;
+  border-right: 2px solid;
+  word-break: normal;
+  pointer-events: none;
+  animation: cursorBlink 1s ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.collaboration-cursor__label {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  user-select: none;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tiptap-content {
+  padding: 16px;
+  min-height: 300px;
+  background-color: white;
+}
+
+/* 에디터 내부 스타일 */
+.tiptap-content .ProseMirror {
+  outline: none;
+  line-height: 1.6;
+}
+
+.tiptap-content .ProseMirror p {
+  margin: 1em 0;
+}
+
+.tiptap-content .ProseMirror h1 {
+  font-size: 2em;
+  margin: 1em 0 0.5em;
+  border-bottom: 2px solid #e65100;
+  padding-bottom: 0.3em;
+  color: #e65100;
+}
+
+.tiptap-content .ProseMirror h2 {
+  font-size: 1.5em;
+  margin: 1em 0 0.5em;
+  border-bottom: 1px solid #ff9800;
+  padding-bottom: 0.3em;
+  color: #e65100;
+}
+
+.tiptap-content .ProseMirror h3 {
+  font-size: 1.3em;
+  margin: 1em 0 0.5em;
+  color: #e65100;
+}
+
+.tiptap-content .ProseMirror blockquote {
+  border-left: 4px solid #ff9800;
+  margin: 1em 0;
+  padding: 0.5em 0 0.5em 1em;
+  color: #666;
+  background-color: #fff3e0;
+  border-radius: 4px;
+}
+
+.tiptap-content .ProseMirror pre {
+  background-color: #f5f5f5;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1em 0;
+  border: 1px solid #e0e0e0;
+}
+
+.tiptap-content .ProseMirror code {
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #d84315;
+}
+
+.tiptap-content .ProseMirror ul,
+.tiptap-content .ProseMirror ol {
+  padding-left: 2em;
+  margin: 1em 0;
+}
+
+.tiptap-content .ProseMirror li {
+  margin: 0.2em 0;
+}
+
+.tiptap-content .ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e9ecef;
+  margin: 2em 0;
+}
+
+.tiptap-content .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 1em 0;
+}
+
+.tiptap-content .ProseMirror a {
+  color: #e65100;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.tiptap-content .ProseMirror a:hover {
+  border-bottom-color: #e65100;
+  background-color: #fff3e0;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.tiptap-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* 테이블 스타일 */
+.tiptap-content .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.tiptap-content .ProseMirror table th,
+.tiptap-content .ProseMirror table td {
+  border: 1px solid #e0e0e0;
+  padding: 0.5em 0.8em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tiptap-content .ProseMirror table th {
+  background-color: #ff9800;
+  color: white;
+  font-weight: 600;
+}
+
+.tiptap-content .ProseMirror table tr:nth-child(even) {
+  background-color: #fff3e0;
+}
+
+/* 작업 목록 스타일 */
+.tiptap-content .ProseMirror .task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-content .ProseMirror .task-item {
+  display: flex;
+  align-items: flex-start;
+  margin: 0.3em 0;
+  padding: 0.2em 0;
+}
+
+.tiptap-content .ProseMirror .task-item input[type="checkbox"] {
+  margin-right: 0.5em;
+  margin-top: 0.1em;
+  cursor: pointer;
+}
+
+.tiptap-content .ProseMirror .task-item > div {
+  flex: 1;
+}
+
+.tiptap-content .ProseMirror .task-item[data-checked="true"] {
+  opacity: 0.6;
+}
+
+.tiptap-content .ProseMirror .task-item[data-checked="true"] > div {
+  text-decoration: line-through;
+}
+
+/* 하이라이트 스타일 */
+.tiptap-content .ProseMirror mark {
+  background-color: #ffeb3b;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+  color: #333;
+}
+
+/* 위/아래첨자 스타일 */
+.tiptap-content .ProseMirror sub {
+  vertical-align: sub;
+  font-size: smaller;
+}
+
+.tiptap-content .ProseMirror sup {
+  vertical-align: super;
+  font-size: smaller;
+}
+
+/* 텍스트 정렬 */
+.tiptap-content .ProseMirror .text-left {
+  text-align: left;
+}
+
+.tiptap-content .ProseMirror .text-center {
+  text-align: center;
+}
+
+.tiptap-content .ProseMirror .text-right {
+  text-align: right;
+}
+
+.tiptap-content .ProseMirror .text-justify {
+  text-align: justify;
+}
+
+/* 밑줄 스타일 */
+.tiptap-content .ProseMirror u {
+  text-decoration: underline;
+}
+
+/* 취소선 스타일 */
+.tiptap-content .ProseMirror s {
+  text-decoration: line-through;
+}
+
+/* 강조 스타일 */
+.tiptap-content .ProseMirror strong {
+  font-weight: 700;
+  color: #d84315;
+}
+
+.tiptap-content .ProseMirror em {
+  font-style: italic;
+  color: #e65100;
+}
+
+/* 협업 편집 모드 스타일 */
+.ProseMirror.collaboration-mode {
+  background-color: #fafafa;
+  border-left: 4px solid #4caf50;
+}
+
+/* 포커스 스타일 */
+.tiptap-content .ProseMirror:focus {
+  outline: none;
+}
+
+/* 선택 스타일 */
+.tiptap-content .ProseMirror .ProseMirror-selectednode {
+  outline: 2px solid #ff9800;
+  outline-offset: 2px;
+}
+
+/* 드래그 앤 드롭 스타일 */
+.tiptap-content .ProseMirror .drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.tiptap-content .ProseMirror .drag-handle:hover {
+  opacity: 1;
+}
+
+.tiptap-content .ProseMirror .drag-handle:active {
+  cursor: grabbing;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .tiptap-content .ProseMirror {
+    font-size: 16px;
+  }
+  
+  .tiptap-content .ProseMirror table {
+    font-size: 14px;
+  }
+  
+  .tiptap-content .ProseMirror pre {
+    font-size: 14px;
+  }
+  
+  .tiptap-toolbar {
+    padding: 4px;
+  }
+  
+  .tiptap-toolbar button {
+    width: 28px;
+    height: 28px;
+  }
+} 
