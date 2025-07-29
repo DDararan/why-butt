@@ -236,14 +236,32 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             new Plugin({
               props: {
                 handlePaste: (view, event) => {
+                  console.log('[이미지붙여넣기] handlePaste 호출됨');
                   const items = event.clipboardData?.items;
-                  if (!items) return false;
+                  if (!items) {
+                    console.log('[이미지붙여넣기] clipboardData.items가 없음');
+                    return false;
+                  }
 
+                  console.log('[이미지붙여넣기] 클립보드 아이템 개수:', items.length);
+                  
                   for (let i = 0; i < items.length; i++) {
                     const item = items[i];
+                    console.log(`[이미지붙여넣기] 아이템 ${i}: type=${item.type}, kind=${item.kind}`);
+                    
                     if (item.type.indexOf('image') === 0) {
+                      console.log('[이미지붙여넣기] 이미지 아이템 발견');
                       const file = item.getAsFile();
-                      if (!file) continue;
+                      if (!file) {
+                        console.log('[이미지붙여넣기] getAsFile() 실패');
+                        continue;
+                      }
+
+                      console.log('[이미지붙여넣기] 파일 정보:', {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                      });
 
                       event.preventDefault();
 
@@ -251,18 +269,26 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
                       const reader = new FileReader();
                       reader.onload = (e) => {
                         const base64 = e.target?.result as string;
-                        console.log('[이미지붙여넣기] base64 변환 완료');
+                        console.log('[이미지붙여넣기] base64 변환 완료, 길이:', base64.length);
+                        console.log('[이미지붙여넣기] base64 시작부분:', base64.substring(0, 50));
                         
                         const { schema } = view.state;
                         const node = schema.nodes.image.create({ src: base64 });
+                        console.log('[이미지붙여넣기] 이미지 노드 생성:', node);
+                        
                         const transaction = view.state.tr.replaceSelectionWith(node);
                         view.dispatch(transaction);
+                        console.log('[이미지붙여넣기] 트랜잭션 dispatch 완료');
+                      };
+                      reader.onerror = (error) => {
+                        console.error('[이미지붙여넣기] FileReader 오류:', error);
                       };
                       reader.readAsDataURL(file);
 
                       return true;
                     }
                   }
+                  console.log('[이미지붙여넣기] 이미지 아이템을 찾지 못함');
                   return false;
                 },
                 handleDrop: (view, event) => {
@@ -359,6 +385,22 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
           steps: transaction.steps.length,
           content: editor.getHTML().substring(0, 50) + '...'
         });
+        
+        // Y.js fragment 상태 확인
+        const fragment = ydoc.getXmlFragment('content');
+        console.log('[키입력3-1] Y.js fragment 현재 상태:');
+        console.log('  - fragment.toString():', fragment.toString());
+        console.log('  - fragment.length:', fragment.length);
+        
+        // 이미지가 포함되어 있는지 확인
+        const html = editor.getHTML();
+        if (html.includes('<img')) {
+          console.log('[이미지확인] 에디터에 이미지 포함됨');
+          const imgMatch = html.match(/<img[^>]+src="([^"]+)"/);
+          if (imgMatch) {
+            console.log('[이미지확인] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
+          }
+        }
       }
       
       // 툴바 액션이나 IME 조합 중이 아닌 경우에만 onChange 호출
