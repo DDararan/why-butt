@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -22,7 +22,7 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import MarkdownButton from './MarkdownButton';
+
 import TableToolbar from './TableToolbar';
 import './Editor.css';
 import './TipTapEditor.css';
@@ -33,7 +33,6 @@ interface YjsEditorNewProps {
   currentUser: { staffId: string; userName: string; loginId?: string };
   defaultValue?: string;
   onChange?: (value: string) => void;
-  readOnly?: boolean;
 }
 
 // 사용자 색상 팔레트 - 더 선명하고 구분이 쉬운 색상들
@@ -54,8 +53,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   pageId,
   currentUser,
   defaultValue = '',
-  onChange,
-  readOnly = false
+  onChange
 }) => {
   const [editorReady, setEditorReady] = useState(false);
   const [isLocalSynced, setLocalSynced] = useState(false);
@@ -63,6 +61,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<string>('connecting');
   const [connectedUsers, setConnectedUsers] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [initialSyncCompleted, setInitialSyncCompleted] = useState(false);
+  const [skipBroadcast, setSkipBroadcast] = useState(false); // 브로드캐스트 스킵 플래그
   
   const ydocRef = useRef<Y.Doc | null>(null);
   const localProviderRef = useRef<IndexeddbPersistence | null>(null);
@@ -75,6 +74,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   const initialSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const contentSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncedContentRef = useRef<string>('');
+  const skipBroadcastRef = useRef(false); // 브로드캐스트 스킵을 ref로 관리
   
   // onChange 최신 값 유지
   useEffect(() => {
@@ -83,7 +83,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   
   // 백엔드로 컨텐츠 동기화 (디바운스 처리)
   const syncContentToBackend = useCallback((content: string) => {
-    if (readOnly || !pageId) return;
+    if (!pageId) return;
     
     // 이전 타이머 취소
     if (contentSyncTimeoutRef.current) {
@@ -98,12 +98,13 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
           await wikiService.syncContent(pageId, content);
           lastSyncedContentRef.current = content;
           console.log('[Y.js] 백엔드 동기화 성공 (2초 디바운스)');
+          console.log('[Y.js] 동기화된 컨텐츠 길이:', content.length);
         } catch (error) {
           console.error('[Y.js] 백엔드 동기화 실패:', error);
         }
       }
     }, 2000);
-  }, [pageId, readOnly]);
+  }, [pageId]);
   
   // 문서 이름 생성 (Docmost 방식: 단순히 pageId 사용)
   const documentName = useMemo(() => `${pageId}`, [pageId]);
@@ -116,8 +117,14 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
 
   // Y.Doc 초기화 - 컴포넌트별로 고유한 인스턴스 생성
   const ydoc = useMemo(() => {
+    console.log('[] Y.Doc 생성/초기화', {
+      pageId,
+      documentName
+    });
+    
     // 기존 Y.Doc 정리
     if (ydocRef.current) {
+      console.log('[] 기존 Y.Doc 파기');
       // 기존 Y.Doc 정리
       ydocRef.current.destroy();
     }
@@ -126,16 +133,20 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     const newDoc = new Y.Doc();
     ydocRef.current = newDoc;
     
-    // Y.Doc 생성
+    console.log('[페이지수정13] 새 Y.Doc 생성 완료');
     
     return newDoc;
   }, [pageId, documentName]); // pageId 변경 시 새 문서 생성
 
   // WebSocket Provider 초기 설정 (Docmost 방식)
   const wsProvider = useMemo(() => {
+    console.log('[페이지수정14] WebSocket Provider 생성 시작', {
+      pageId,
+      documentName
+    });
+    
     if (typeof window === 'undefined') return null;
     
-    // 읽기 전용 모드에서도 WebSocket 연결을 허용하여 실시간 업데이트 가능하게 함
     // WebSocket Provider 초기화
     
     // WebSocket URL에 room 이름 포함하지 않음 (y-websocket이 자동 추가)
@@ -179,9 +190,18 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     });
     
     // Provider awareness 설정
+    console.log('[페이지수정15] WebSocket Provider 생성 완료', {
+      wsUrl,
+      documentName,
+      params: {
+        loginId: loginId,
+        userId: currentUser.staffId,
+        userName: currentUser.userName,
+      }
+    });
     
     return provider;
-  }, [documentName, ydoc, currentUser.staffId, currentUser.userName, currentUser.loginId, userColor, readOnly]);
+  }, [documentName, ydoc, currentUser.staffId, currentUser.userName, currentUser.loginId, userColor]);
 
   // TipTap Editor 설정
   const editor = useEditor({
@@ -217,7 +237,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         HTMLAttributes: { class: 'editor-link' },
       }),
       Placeholder.configure({
-        placeholder: readOnly ? '읽기 전용 모드입니다.' : '내용을 입력하세요...',
+        placeholder: '내용을 입력하세요...',
       }),
       Subscript,
       Superscript,
@@ -238,7 +258,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         field: 'content', // 명시적으로 필드 지정
         fragment: ydoc.getXmlFragment('content'), // fragment 명시적 지정
       }),
-      // CollaborationCursor 추가 (wsProvider가 있을 때만 - readOnly 모드에서도 다른 사용자의 커서를 볼 수 있음)
+      // CollaborationCursor 추가 (wsProvider가 있을 때만)
       ...(wsProvider ? [
         CollaborationCursor.configure({
           provider: wsProvider,
@@ -250,32 +270,77 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       ] : []),
     ],
     content: '', // Y.js Collaboration이 내용을 관리하므로 초기값은 빈 문자열
-    editable: !readOnly,
+    immediatelyRender: false, // 초기 렌더링을 지연하여 Y.js 동기화 대기
+    editable: true,
     onCreate: ({ editor }) => {
+      console.log('[페이지수정16] TipTap 에디터 생성 완료');
+      
+      // 에디터 생성 시 Y.js fragment 확인
+      const fragment = ydoc.getXmlFragment('content');
+      console.log('[페이지수정16-1] 에디터 생성 시 Y.js fragment 상태:');
+      console.log('  - fragment.toString():', fragment.toString());
+      console.log('  - fragment.length:', fragment.length);
+      console.log('  - 에디터 초기 HTML:', editor.getHTML());
+      
       setEditorReady(true);
     },
     onUpdate: ({ editor, transaction }) => {
+      
+      
       // 타이핑 시 Y.js 저장 로그
-      if (transaction.docChanged && !readOnly) {
-        console.log('[Y.js] 타이핑 감지 - Y.js 문서 업데이트');
+      if (transaction.docChanged) {
+        console.log('[키입력1] TipTap 에디터 변경 감지', {
+          docChanged: transaction.docChanged,
+          steps: transaction.steps.length,
+          content: editor.getHTML().substring(0, 50) + '...'
+        });
       }
       
       // 툴바 액션이나 IME 조합 중이 아닌 경우에만 onChange 호출
       if (!isToolbarActionRef.current && !isComposingRef.current) {
         if (onChangeRef.current && transaction.docChanged) {
+          console.log('[키입력2] onChange 호출');
           onChangeRef.current(editor.getHTML());
         }
       }
     },
     // onTransaction, onSelectionUpdate 제거
-  }, [wsProvider, readOnly, userColor, ydoc, defaultValue]);
+  }, [wsProvider, userColor, ydoc, defaultValue]);
 
   // 키 입력 이벤트 감지 제거
 
+  // 초기 데이터 동기화를 위한 함수 (페이지 수정 버튼 클릭 시 사용)
+  const handleInitialDataSync = useCallback((fragmentLength: number, currentContent: string) => {
+    console.log('[페이지수정_초기화] 초기 데이터 동기화 시작');
+    console.log('  - fragment 길이:', fragmentLength);
+    console.log('  - 현재 컨텐츠 길이:', currentContent.length);
+    console.log('  - DB defaultValue 길이:', defaultValue ? defaultValue.length : 0);
+    
+    const isEmptyContent = !currentContent || currentContent === '<p></p>' || currentContent.length < 10;
+    
+    // Y.js 문서가 비어있거나 의심스러운 경우 DB 내용 사용
+    if (defaultValue && editor && (fragmentLength === 0 || isEmptyContent)) {
+      console.log('[페이지수정_초기화] Y.js 문서가 비어있음 - DB 내용으로 초기화');
+      try {
+        // 에디터 내용 설정
+        editor.commands.setContent(defaultValue);
+        console.log('[페이지수정_초기화] DB 내용 설정 완료');
+      } catch (e) {
+        console.error('[페이지수정_초기화] 초기 내용 설정 실패:', e);
+      }
+    } else {
+      console.log('[페이지수정_초기화] Y.js 문서에 유효한 내용 있음 - 그대로 사용');
+      console.log('  - Y.js 내용:', currentContent.substring(0, 100) + '...');
+    }
+  }, [defaultValue, editor]);
+
   // Provider 초기화
   useEffect(() => {
-    // wsProvider가 없거나 에디터가 준비되지 않은 경우만 건너뛰기 (readOnly 모드에서도 초기화 진행)
+    // wsProvider가 없거나 에디터가 준비되지 않은 경우만 건너뛰기
     if (!wsProvider || !editor || !editorReady) return;
+    
+    // 플래그 초기화
+    skipBroadcastRef.current = false;
     
     let syncTimeout: NodeJS.Timeout | undefined;
     
@@ -289,17 +354,24 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         // WebSocket 연결 상태 이벤트
         remoteProviderRef.current.on('status', (event: any) => {
           // WebSocket 상태 변경
+          console.log('[Y.js] WebSocket 상태 변경:', event.status);
+          console.log('[Y.js] 페이지 ID:', pageId, ', Room:', documentName);
           setConnectionStatus(event.status);
           
           if (event.status === 'connected') {
             // WebSocket 연결 완료
+            console.log('[초기동기화] WebSocket 연결 완료');
+            console.log('[초기동기화] SyncStep1 메시지 전송 시작...');
             setProviderReady(true);
+            
+            skipBroadcastRef.current = true;
             
             // 초기 동기화 대기
             
             // 초기 동기화 타임아웃 설정
             initialSyncTimeoutRef.current = setTimeout(() => {
               // 초기 동기화 타임아웃
+              console.log('[Y.js] 동기화 타임아웃 - 강제로 동기화 완료 처리');
               setInitialSyncCompleted(true);
             }, 5000);
             
@@ -308,40 +380,64 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         });
         
         // 동기화 상태 변경 이벤트
-        remoteProviderRef.current.on('synced', (isSynced: boolean) => {
+        remoteProviderRef.current.on('sync', (isSynced: boolean) => {
           // 원격 동기화 상태
+          console.log('[초기동기화] ============= Y.js 동기화 상태 변경 =============');
+          console.log('[초기동기화] 동기화 상태:', isSynced ? '완료' : '진행중');
           setRemoteSynced(isSynced);
           
           // 초기 동기화 완료 감지
           if (isSynced && !initialSyncCompleted) {
-            // 초기 동기화 완료
+            console.log('[초기동기화] ✅ 초기 동기화 완료!');
+            console.log('[초기동기화] - SyncStep1 → SyncStep2 → SyncDone 프로토콜 완료');
+            console.log('[초기동기화] - 이제부터 실시간 UPDATE 메시지로 동기화됩니다.');
             
-            // Y.js 문서 현재 상태 확인
-            const fragment = ydoc.getXmlFragment('content');
-            const fragmentLength = fragment.length;
+            // 초기 동기화 플래그 해제
+            setTimeout(() => {
+              skipBroadcastRef.current = false;
+            }, 500);
             
-            // 첫 번째 클라이언트이고 문서가 비어있으면 defaultValue 설정
-            if (defaultValue && editor && fragmentLength === 0) {
-              // 첫 번째 클라이언트 - 초기 내용 설정
+            // 약간의 지연을 두고 에디터 내용 확인
+            setTimeout(() => {
+              console.log('[디버그] setTimeout 내부 실행');
+              // Y.js 문서 현재 상태 확인
+              const fragment = ydoc.getXmlFragment('content');
+              const fragmentLength = fragment.length;
               
-              // 임시로 에디터에 내용을 설정하여 Y.js 문서에 반영
-              // 이때 initialSyncCompleted가 false이므로 WebSocket으로 전송되지 않음
-              const tempSyncState = initialSyncCompleted;
-              try {
-                editor.commands.setContent(defaultValue);
-                // 초기 내용 설정 완료
-              } catch (e) {
-                console.error('[Y.js] 초기 내용 설정 실패:', e);
+              // Y.js 문서 내부 구조 상세 로그
+              console.log('[디버그] Y.js 문서 구조 분석:');
+              console.log('  - fragment 객체:', fragment);
+              console.log('  - fragment.toArray():', fragment.toArray());
+              if (fragment.length > 0) {
+                const firstItem = fragment.get(0);
+                console.log('  - 첫 번째 아이템:', firstItem);
+                console.log('  - 첫 번째 아이템 타입:', firstItem?.constructor.name);
               }
-            }
-            
-            setInitialSyncCompleted(true);
-            
-            // 타임아웃 정리
-            if (initialSyncTimeoutRef.current) {
-              clearTimeout(initialSyncTimeoutRef.current);
-              initialSyncTimeoutRef.current = null;
-            }
+              
+              // 에디터가 준비되었을 때 Y.js 문서의 실제 내용 확인
+              let currentContent = '';
+              if (editor && !editor.isDestroyed) {
+                currentContent = editor.getHTML();
+                console.log('[Y.js] 초기 동기화 - 현재 에디터 내용:', currentContent.substring(0, 100) + '...');
+                console.log('[Y.js] 초기 동기화 - 에디터 내용 길이:', currentContent.length);
+                console.log('[Y.js] 초기 동기화 - fragment 노드 수:', fragmentLength);
+                console.log('[Y.js] 초기 동기화 - defaultValue 길이:', defaultValue ? defaultValue.length : 0);
+              }
+              
+              // 초기 데이터 동기화 함수 호출
+              handleInitialDataSync(fragmentLength, currentContent);
+              
+              setInitialSyncCompleted(true);
+              
+              // 초기 동기화 완료 로그
+              console.log('[Y.js] 초기 동기화 처리 완료');
+              
+              // 타임아웃 정리
+              if (initialSyncTimeoutRef.current) {
+                clearTimeout(initialSyncTimeoutRef.current);
+                initialSyncTimeoutRef.current = null;
+              }
+            }, 100); // 100ms 지연
           }
         });
         
@@ -372,16 +468,66 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         const originName = origin?.constructor?.name || origin;
         
         // 로컬 변경일 때만 로그
-        if (origin !== wsProvider && originName !== 'WebsocketProvider' && !readOnly) {
-          console.log('[Y.js] 로컬 업데이트 감지 - Y.js 문서 저장');
+        if (origin !== wsProvider && originName !== 'WebsocketProvider') {
+          
+          // 브로드캐스트 스킵 플래그 확인
+          if (skipBroadcastRef.current) {
+            console.log('[페이지수정19] 브로드캐스트 스킵 - Y.js 업데이트 무시');
+            return; // 브로드캐스트 스킵
+          }
+          
+          console.log('[실시간수정] Y.js UPDATE 메시지 생성', {
+            origin: originName,
+            updateSize: update.length,
+            docId: ydoc.clientID,
+            skipBroadcast: skipBroadcastRef.current
+          });
+          
+          // Y.js 문서 현재 상태 확인
+          const fragment = ydoc.getXmlFragment('content');
+          console.log('[키입력3-1] Y.js fragment 현재 상태:');
+          console.log('  - fragment.toString():', fragment.toString());
+          console.log('  - fragment.length:', fragment.length);
+          
+          if (editor && !editor.isDestroyed) {
+            const editorContent = editor.getHTML();
+            console.log('[키입력3-2] 에디터 현재 상태:');
+            console.log('  - 에디터 HTML:', editorContent.substring(0, 100) + '...');
+            console.log('  - 에디터 길이:', editorContent.length);
+          }
+        }
+        
+        // 원격 업데이트일 때 로그 (WebSocket으로부터 받은 업데이트)
+        if ((origin === wsProvider || originName === 'WebsocketProvider') && editor && !editor.isDestroyed) {
+          const currentContent = editor.getHTML();
+          console.log('[페이지수정17] 원격 Y.js 업데이트 수신', {
+            origin: originName,
+            contentLength: currentContent.length,
+            content: currentContent.substring(0, 100) + '...'
+          });
         }
         
         // onChange 호출 및 백엔드 동기화
         if (onChangeRef.current && editor && !editor.isDestroyed && !isComposingRef.current && initialSyncCompleted) {
           if (origin !== wsProvider && originName !== 'WebsocketProvider') {
+            
+            // 초기 동기화 origin인 경우 onChange 호출 안함
+            if (origin === 'initial-sync') {
+              console.log('[페이지수정_초기화] 초기 동기화 - onChange/백엔드 동기화 건너뛰기');
+              return;
+            }
+            
+            // 브로드캐스트 스킵 플래그 확인
+            if (skipBroadcastRef.current) {
+              console.log('[페이지수정20] 브로드캐스트 스킵 - onChange/백엔드 동기화 건너뛰기');
+              return;
+            }
+            
+            console.log('[키입력4] Y.js 변경을 onChange로 전달');
             const htmlContent = editor.getHTML();
             onChangeRef.current(htmlContent);
             // 백엔드로 동기화
+            console.log('[키입력5] 백엔드 동기화 시작 (2초 디바운스)');
             syncContentToBackend(htmlContent);
           }
         }
@@ -427,7 +573,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         }
       }
     };
-  }, [wsProvider, editor, editorReady, readOnly, documentName, defaultValue, ydoc, initialSyncCompleted, syncContentToBackend]);
+  }, [wsProvider, editor, editorReady, documentName, defaultValue, ydoc, initialSyncCompleted, syncContentToBackend, skipBroadcast, handleInitialDataSync]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
@@ -546,9 +692,8 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     }
   }, [editor]);
 
-  // 연결 상태 표시 (읽기 전용 모드 제외)
+  // 연결 상태 표시
   const getConnectionIndicator = () => {
-    if (readOnly) return null;
     
     const colors = {
       connecting: '#FFA500',
@@ -574,7 +719,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
 
   // 사용자 커서 표시
   const renderConnectedUsers = () => {
-    if (readOnly || connectedUsers.length <= 1) return null;
+    if (connectedUsers.length <= 1) return null;
     
     return (
       <Box sx={{ 
@@ -611,32 +756,49 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     );
   };
 
+  // 초기 동기화가 완료되지 않은 경우 로딩 표시
+  if (!initialSyncCompleted && !isLocalSynced) {
+    return (
+      <Box sx={{ 
+        position: 'relative', 
+        minHeight: '400px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        border: '1px solid #ddd',
+        borderRadius: 1,
+        backgroundColor: 'white'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body1" sx={{ mb: 2 }}>Y.js 문서 동기화 중...</Typography>
+          <Typography variant="body2" color="text.secondary">
+            다른 사용자의 최신 편집 내용을 불러오고 있습니다.
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ position: 'relative' }}>
-      {!readOnly && (
-        <MarkdownButton 
-          editor={editor} 
-          onToolbarAction={handleToolbarAction}
-        />
-      )}
-      {!readOnly && editor && (
+      {editor && (
         <TableToolbar 
           editor={editor}
-          onToolbarAction={handleToolbarAction}
+          handleToolbarClick={handleToolbarAction}
         />
       )}
       {getConnectionIndicator()}
       {renderConnectedUsers()}
       <Box
-        className={`tiptap-editor ${readOnly ? 'readonly' : ''}`}
+        className="tiptap-editor"
         sx={{
-          minHeight: readOnly ? 'auto' : '400px',
-          border: readOnly ? 'none' : '1px solid #ddd',
-          borderRadius: readOnly ? 0 : 1,
-          p: readOnly ? 0 : 2,
-          backgroundColor: readOnly ? 'transparent' : 'white',
+          minHeight: '400px',
+          border: '1px solid #ddd',
+          borderRadius: 1,
+          p: 2,
+          backgroundColor: 'white',
           '& .ProseMirror': {
-            minHeight: readOnly ? 'auto' : '350px',
+            minHeight: '350px',
             outline: 'none',
             '& p': {
               margin: 0,

@@ -127,7 +127,14 @@ const WikiPage: React.FC = () => {
   }, [id, page]);
 
   const handleEdit = () => {
+    // console.log('[페이지수정1] 수정 버튼 클릭');
     if (page) {
+      // console.log('[페이지수정2] 페이지 정보:', {
+      //   id: page.id,
+      //   title: page.title,
+      //   contentLength: page.content?.length
+      // });
+      // console.log('[페이지수정3] /wiki/' + page.id + '/edit로 이동');
       navigate(`/wiki/${page.id}/edit`);
     }
   };

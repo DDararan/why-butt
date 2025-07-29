@@ -266,7 +266,6 @@ const WikiCollaborativeEditPage: React.FC = () => {
           }}
           defaultValue={content}
           onChange={handleContentChange}
-          readOnly={false}
         />
       </Paper>
     </Box>

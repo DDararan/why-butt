@@ -121,14 +121,24 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
   const flattenedPages = flattenPages(availablePages);
 
   useEffect(() => {
+    console.log('[페이지수정4] EditPage useEffect 실행', {
+      urlId,
+      isNewPage,
+      state
+    });
+    
     const fetchPage = async () => {
+      console.log('[페이지수정5] fetchPage 시작');
+      
       // state에서 전달받은 내용이 있으면 API 호출 생략
       if (state?.content) {
+        console.log('[페이지수정6] state에 content 있음 - API 호출 생략');
         setLoading(false);
         return;
       }
 
       if (isNewPage) {
+        console.log('[페이지수정7] 새 페이지 모드');
         setLoading(false);
         
         // 상위 페이지가 지정된 경우 처리
@@ -150,14 +160,22 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
       }
 
       try {
+        console.log('[페이지수정8] DB에서 페이지 데이터 가져오기 시작');
         setLoading(true);
         setError(null);
         const page = await wikiService.getPageById(parseInt(urlId!));
+        console.log('[페이지수정9] DB 데이터 수신 완료:', page);
+        
         setTitle(page.title);
         // 마크다운 형식의 내용을 그대로 사용
         setContent(page.content);
         setParentId(page.parentId || null);
         setPageType(page.pageType || 'DOCUMENT');
+        
+        console.log('[페이지수정10] EditPage state 설정 완료:');
+        console.log('  - 페이지 ID:', urlId);
+        console.log('  - 컨텐츠 길이:', page.content.length);
+        console.log('  - 컨텐츠 미리보기:', page.content.substring(0, 100) + '...');
         
         // 부모 페이지가 있는 경우 부모의 페이지 타입 설정
         if (page.parentId && page.parent) {
@@ -259,9 +277,10 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
       }
     };
 
-    fetchPage();
-    fetchPageTypes();
+    // fetchAvailablePages를 먼저 호출하여 페이지 목록을 먼저 로드
     fetchAvailablePages();
+    fetchPageTypes();
+    fetchPage();
   }, [urlId, isNewPage, state]);
 
   // 컴포넌트 마운트 후 제목 필드에 포커스 설정
@@ -590,14 +609,14 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
                   // 이렇게 해야 리렌더링으로 인한 포커스 손실이 없음
                   contentRef.current = newContent;
                   // 저장 시 contentRef.current를 사용하므로 문제 없음
+                  console.log('[EditPage] Y.js 컨텐츠 변경 - 길이:', newContent.length);
                 }}
-                readOnly={false}
               />
             ) : (
               <BasicEditor
                 key={`basic-editor-new`}
                 defaultValue={content}
-                onChange={(newContent) => {
+                onChange={(newContent: string) => {
                   // contentRef만 업데이트하고 state는 업데이트하지 않음
                   // 이렇게 해야 리렌더링으로 인한 포커스 손실이 없음
                   contentRef.current = newContent;

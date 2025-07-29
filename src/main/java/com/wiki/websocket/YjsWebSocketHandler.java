@@ -39,6 +39,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     // 세션별 사용자 정보 (loginId 기반)
     private final Map<String, UserInfo> sessionUserInfo = new ConcurrentHashMap<>();
     
+    
     // 자동 저장을 위한 스케줄러
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     // 변경된 문서 추적
@@ -54,6 +55,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     private static final byte SYNC_STEP1 = 0;
     private static final byte SYNC_STEP2 = 1;
     private static final byte SYNC_UPDATE = 2;
+    
     
     // 사용자 정보 클래스
     private static class UserInfo {
@@ -253,12 +255,64 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         switch (syncType) {
             case SYNC_STEP1:
                 // 클라이언트가 상태 벡터를 보냄
-                System.out.println("Sync Step 1 - Room: " + roomName + ", 세션: " + session.getId());
+                System.out.println("[초기동기화] ============= 초기 동기화 시작 =============");
+                System.out.println("[초기동기화] Sync Step 1 수신 - Room: " + roomName + ", 세션: " + session.getId());
                 
-                // Step 2 응답 전송 (서버의 상태 벡터와 업데이트)
-                byte[] stateVector = doc.getStateVector();
-                byte[] updates = concatenateUpdates(doc.getAllUpdates());
-                sendSyncStep2(session, stateVector, updates);
+                // 클라이언트의 상태 벡터 읽기 (있는 경우)
+                byte[] clientStateVector = null;
+                if (message.length > 2) {
+                    clientStateVector = Arrays.copyOfRange(message, 2, message.length);
+                    System.out.println("  - 클라이언트 상태 벡터 크기: " + clientStateVector.length + " bytes");
+                }
+                
+                // Y.js 문서 상태 로깅
+                System.out.println("[Y.js 동기화] Room " + roomName + " 문서 상태:");
+                System.out.println("  - 저장된 업데이트 개수: " + doc.getAllUpdates().size());
+                System.out.println("  - 문서 버전: " + doc.getVersion());
+                System.out.println("  - 요청 클라이언트: " + session.getId());
+                
+                // 현재 Room에 접속된 클라이언트 수
+                Set<WebSocketSession> roomSessions = this.roomSessions.get(roomName);
+                if (roomSessions != null) {
+                    System.out.println("  - 현재 Room " + roomName + "에 " + roomSessions.size() + "명 접속 중");
+                }
+                
+                // Step 2 응답 전송 (빈 응답)
+                // Y.js는 Step2를 받으면 자동으로 동기화 완료로 인식
+                if (session.isOpen()) {
+                    ByteArrayOutputStream step2Out = new ByteArrayOutputStream();
+                    step2Out.write(MESSAGE_SYNC);
+                    step2Out.write(SYNC_STEP2);
+                    session.sendMessage(new BinaryMessage(step2Out.toByteArray()));
+                    System.out.println("  - [초기동기화] Sync Step2 빈 응답 전송");
+                    
+                    // 저장된 업데이트가 있으면 개별 UPDATE 메시지로 전송
+                    List<byte[]> allUpdates = doc.getAllUpdates();
+                    if (!allUpdates.isEmpty() && session.isOpen()) {
+                        System.out.println("  - [초기동기화] 저장된 업데이트 " + allUpdates.size() + "개를 개별 전송");
+                        for (int i = 0; i < allUpdates.size(); i++) {
+                            if (!session.isOpen()) {
+                                System.out.println("    - 세션이 닫혀 업데이트 전송 중단");
+                                break;
+                            }
+                            ByteArrayOutputStream updateOut = new ByteArrayOutputStream();
+                            updateOut.write(MESSAGE_SYNC);
+                            updateOut.write(SYNC_UPDATE);
+                            updateOut.write(allUpdates.get(i));
+                            try {
+                                session.sendMessage(new BinaryMessage(updateOut.toByteArray()));
+                                System.out.println("    - 업데이트 " + (i + 1) + "/" + allUpdates.size() + " 전송");
+                            } catch (IOException e) {
+                                System.err.println("    - 업데이트 전송 실패: " + e.getMessage());
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    System.out.println("  - [초기동기화] 세션이 이미 닫혀 있어 응답 전송 불가");
+                }
+                
+                System.out.println("  - [초기동기화] 초기 동기화 완료!");
                 break;
                 
             case SYNC_STEP2:
@@ -268,17 +322,19 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                 
             case SYNC_UPDATE:
                 // 업데이트 수신 및 브로드캐스트
-                System.out.println("Sync Update 받음 - Room: " + roomName + ", 세션: " + session.getId());
+                System.out.println("[실시간수정] UPDATE 메시지 수신 - Room: " + roomName + ", 발신자: " + session.getId());
                 if (message.length > 2) {
                     byte[] update = Arrays.copyOfRange(message, 2, message.length);
-                    System.out.println("  - 업데이트 크기: " + update.length + " bytes");
+                    System.out.println("[키입력7] 업데이트 크기: " + update.length + " bytes");
                     
+                    // 업데이트를 저장하고 브로드캐스트
                     doc.addUpdate(update);
                     dirtyDocuments.add(roomName);
-                    System.out.println("  - YjsDocument에 업데이트 추가 완료");
-                    System.out.println("  - 더티 문서 목록에 추가 완료");
+                    System.out.println("[키입력8] YjsDocument에 업데이트 저장");
+                    System.out.println("  - 현재 총 업데이트 개수: " + doc.getAllUpdates().size());
                     
                     // 본인을 제외한 다른 클라이언트에게 브로드캐스트
+                    System.out.println("[키입력9] 다른 클라이언트에게 브로드캐스트 시작");
                     broadcastUpdate(roomName, session.getId(), update);
                     
                     System.out.println("업데이트 브로드캐스트 완료 - Room: " + roomName + 
@@ -368,17 +424,15 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     // 마지막 사용자가 나간 경우
                     roomSessions.remove(roomName);
                     saveDocumentIfDirty(roomName);
-                    System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 제거");
                     
-                    // 추가 정리 작업 (필요 시)
-                    
-                    // 일정 시간 후 문서 정리 (메모리 절약)
-                    scheduler.schedule(() -> {
-                        if (!roomSessions.containsKey(roomName)) {
-                            roomDocuments.remove(roomName);
-                            System.out.println("Room " + roomName + " 문서 메모리에서 제거");
-                        }
-                    }, 5, TimeUnit.MINUTES);
+                    // Y.js 문서를 즉시 메모리에서 제거
+                    YjsDocument removedDoc = roomDocuments.remove(roomName);
+                    if (removedDoc != null) {
+                        System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 및 Y.js 문서 제거");
+                        System.out.println("    - 제거된 Y.js 문서의 업데이트 개수: " + removedDoc.getAllUpdates().size());
+                    } else {
+                        System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 제거 (Y.js 문서는 이미 없음)");
+                    }
                 } else {
                     // 다른 사용자들에게 사용자 퇴장 알림
                     if (userInfo != null) {
@@ -398,7 +452,15 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         logger.error("Y-WebSocket 전송 오류 - 세션: {}, 오류: {}", session.getId(), exception.getMessage());
-        session.close();
+        
+        // 이미 닫힌 세션인 경우 무시
+        if (session.isOpen()) {
+            try {
+                session.close();
+            } catch (IOException e) {
+                logger.debug("이미 닫힌 세션 - 무시: {}", session.getId());
+            }
+        }
     }
     
     // 유틸리티 메서드들
@@ -438,28 +500,81 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         return params;
     }
     
-    private void sendSyncStep2(WebSocketSession session, byte[] stateVector, byte[] updates) throws IOException {
+    /**
+     * Y.js Sync Step2 응답을 업데이트와 함께 전송
+     * Y.js 프로토콜: MESSAGE_SYNC + SYNC_STEP2 + 단일 통합 업데이트
+     */
+    private void sendSyncStep2WithUpdates(WebSocketSession session, List<byte[]> updates) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         out.write(MESSAGE_SYNC);
         out.write(SYNC_STEP2);
-        if (stateVector != null && stateVector.length > 0) {
-            out.write(stateVector);
-        }
-        if (updates != null && updates.length > 0) {
-            out.write(updates);
+        
+        // 업데이트가 없으면 빈 Step2 전송
+        if (updates == null || updates.isEmpty()) {
+            session.sendMessage(new BinaryMessage(out.toByteArray()));
+            System.out.println("  - Sync Step2 빈 응답 전송");
+            return;
         }
         
-        session.sendMessage(new BinaryMessage(out.toByteArray()));
+        // 모든 업데이트를 하나의 메시지로 병합
+        // Y.js는 Step2에서 단일 업데이트를 기대함
+        ByteArrayOutputStream updateBuffer = new ByteArrayOutputStream();
+        for (byte[] update : updates) {
+            updateBuffer.write(update);
+        }
+        
+        byte[] mergedUpdate = updateBuffer.toByteArray();
+        
+        // VarUint로 업데이트 길이 인코딩 (Y.js 프로토콜 요구사항)
+        writeVarUint(out, mergedUpdate.length);
+        out.write(mergedUpdate);
+        
+        byte[] message = out.toByteArray();
+        session.sendMessage(new BinaryMessage(message));
+        System.out.println("  - Sync Step2 전송 완료 (업데이트 포함, 전체 크기: " + message.length + " bytes)");
+    }
+    
+    /**
+     * Variable-length integer 인코딩 (Y.js 프로토콜용)
+     */
+    private void writeVarUint(ByteArrayOutputStream out, int value) {
+        while (value > 127) {
+            out.write((value & 127) | 128);
+            value >>>= 7;
+        }
+        out.write(value & 127);
+    }
+    
+    /**
+     * 클라이언트에게 업데이트 전송
+     * 각 업데이트를 개별 SYNC_UPDATE 메시지로 전송
+     */
+    private void sendUpdatesToClient(WebSocketSession session, List<byte[]> updates) throws IOException {
+        for (int i = 0; i < updates.size(); i++) {
+            byte[] update = updates.get(i);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(MESSAGE_SYNC);
+            out.write(SYNC_UPDATE);
+            out.write(update);
+            
+            try {
+                session.sendMessage(new BinaryMessage(out.toByteArray()));
+                System.out.println("    - 업데이트 " + (i + 1) + "/" + updates.size() + " 전송 (크기: " + update.length + " bytes)");
+            } catch (IOException e) {
+                System.err.println("    - 업데이트 " + (i + 1) + " 전송 실패: " + e.getMessage());
+                throw e;
+            }
+        }
     }
     
     private void broadcastUpdate(String roomName, String excludeSessionId, byte[] update) {
         Set<WebSocketSession> sessions = roomSessions.get(roomName);
         if (sessions == null) {
-            System.out.println("브로드캐스트 실패: Room " + roomName + "에 세션이 없음");
+            System.out.println("[키입력10] 브로드캐스트 실패: Room " + roomName + "에 세션이 없음");
             return;
         }
         
-        System.out.println("업데이트 브로드캐스트 시작:");
+        System.out.println("[키입력11] 브로드캐스트 시작");
         System.out.println("  - 룸: " + roomName);
         System.out.println("  - 발신자 제외: " + excludeSessionId);
         System.out.println("  - 업데이트 크기: " + update.length + " bytes");
@@ -480,21 +595,29 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         int failCount = 0;
         
         for (WebSocketSession session : sessions) {
-            if (!session.getId().equals(excludeSessionId) && session.isOpen()) {
-                try {
-                    session.sendMessage(new BinaryMessage(message));
-                    successCount++;
-                    System.out.println("  - 전송 성공: " + session.getId());
-                } catch (IOException e) {
-                    failCount++;
-                    System.err.println("  - 전송 실패: " + session.getId() + ", 오류: " + e.getMessage());
+            if (!session.getId().equals(excludeSessionId)) {
+                if (session.isOpen()) {
+                    try {
+                        System.out.println("[키입력12] 업데이트 전송 - 수신자: " + session.getId());
+                        session.sendMessage(new BinaryMessage(message));
+                        successCount++;
+                    } catch (IOException e) {
+                        failCount++;
+                        System.err.println("[키입력13] 전송 실패: " + session.getId() + ", 오류: " + e.getMessage());
+                        // 닫힌 세션은 목록에서 제거할 수 있도록 표시
+                        if (e.getCause() instanceof java.nio.channels.ClosedChannelException) {
+                            System.err.println("  - 채널이 닫혀 있음. 세션 정리 필요: " + session.getId());
+                        }
+                    }
+                } else {
+                    System.out.println("[키입력12-skip] 세션이 닫혀 있어 전송 건너뛰기: " + session.getId());
                 }
-            } else {
-                System.out.println("  - 전송 스킵: " + session.getId() + " (발신자이거나 연결 종료됨)");
+            } else if (session.getId().equals(excludeSessionId)) {
+                System.out.println("[키입력14] 발신자 제외: " + session.getId());
             }
         }
         
-        System.out.println("브로드캐스트 완료: 성공 " + successCount + "건, 실패 " + failCount + "건");
+        System.out.println("[키입력15] 브로드캐스트 완료: 성공 " + successCount + "건, 실패 " + failCount + "건");
     }
     
     private void broadcastUserJoined(String roomName, String sessionId, String loginId, String userName) {
@@ -522,21 +645,8 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         }
     }
     
-    private byte[] concatenateUpdates(List<byte[]> updates) {
-        if (updates.isEmpty()) {
-            return new byte[0];
-        }
-        
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        for (byte[] update : updates) {
-            try {
-                out.write(update);
-            } catch (IOException e) {
-                logger.error("업데이트 연결 실패: {}", e.getMessage());
-            }
-        }
-        return out.toByteArray();
-    }
+    // concatenateUpdates 메소드는 더 이상 사용하지 않음
+    // Y.js 프로토콜에 따라 각 업데이트는 개별적으로 전송되어야 함
     
     private void saveDocumentIfDirty(String roomName) {
         if (dirtyDocuments.remove(roomName)) {
