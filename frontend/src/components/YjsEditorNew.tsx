@@ -22,6 +22,7 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
+import { Plugin } from 'prosemirror-state';
 
 import EditorToolbar from './EditorToolbar';
 import './Editor.css';
@@ -232,13 +233,14 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         addProseMirrorPlugins() {
           return [
             ...(this.parent?.() || []),
-            {
+            new Plugin({
               props: {
                 handlePaste: (view, event) => {
                   const items = event.clipboardData?.items;
                   if (!items) return false;
 
-                  for (const item of items) {
+                  for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
                     if (item.type.indexOf('image') === 0) {
                       const file = item.getAsFile();
                       if (!file) continue;
@@ -288,7 +290,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
                   return true;
                 },
               },
-            },
+            }),
           ];
         },
       }).configure({
