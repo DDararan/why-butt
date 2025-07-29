@@ -177,19 +177,36 @@ public class FileController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String storedFileName) {
         System.out.println("파일 다운로드 요청: " + storedFileName);
         try {
-            // 파일 정보 조회
-            FileAttachmentDto.Response fileInfo = fileService.getFileInfo(storedFileName);
-            System.out.println("파일 정보 조회 성공: " + fileInfo.getOriginalFileName());
-            
-            // 파일 리소스 조회
+            // 파일 리소스 조회 (DB 정보 없어도 파일 시스템에서 찾을 수 있음)
             Resource resource = fileService.downloadFile(storedFileName);
-            System.out.println("파일 리소스 조회 성공");
+            System.out.println("파일 리소스 조회 성공: " + storedFileName);
+            
+            // 파일 정보 조회 시도 (실패해도 무시)
+            String contentType = "application/octet-stream";
+            String originalFileName = storedFileName;
+            
+            try {
+                FileAttachmentDto.Response fileInfo = fileService.getFileInfo(storedFileName);
+                System.out.println("파일 정보 조회 성공: " + fileInfo.getOriginalFileName());
+                contentType = fileInfo.getContentType();
+                originalFileName = fileInfo.getOriginalFileName();
+            } catch (Exception e) {
+                System.out.println("DB에서 파일 정보를 찾을 수 없음, 기본값 사용: " + storedFileName);
+                // 확장자로 contentType 추측
+                if (storedFileName.toLowerCase().endsWith(".png")) {
+                    contentType = "image/png";
+                } else if (storedFileName.toLowerCase().endsWith(".jpg") || storedFileName.toLowerCase().endsWith(".jpeg")) {
+                    contentType = "image/jpeg";
+                } else if (storedFileName.toLowerCase().endsWith(".gif")) {
+                    contentType = "image/gif";
+                }
+            }
             
             // 파일 다운로드 응답 헤더 설정
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(fileInfo.getContentType()))
+                    .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, 
-                            "attachment; filename=\"" + fileInfo.getOriginalFileName() + "\"")
+                            "attachment; filename=\"" + originalFileName + "\"")
                     .body(resource);
         } catch (Exception e) {
             System.err.println("파일 다운로드 실패: " + storedFileName + " - " + e.getMessage());

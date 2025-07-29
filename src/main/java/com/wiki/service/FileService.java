@@ -197,10 +197,38 @@ public class FileService {
      * 기존 파일 구조와 새로운 페이지별 폴더 구조를 모두 지원합니다.
      */
     public Resource downloadFile(String storedFileName) {
-        FileAttachment fileAttachment = fileAttachmentRepository.findByStoredFileName(storedFileName)
-                .orElseThrow(() -> new ResourceNotFoundException("파일을 찾을 수 없습니다: " + storedFileName));
+        // 먼저 DB에서 파일 정보를 찾음
+        Optional<FileAttachment> fileAttachmentOpt = fileAttachmentRepository.findByStoredFileName(storedFileName);
         
         try {
+            // DB에 파일 정보가 없어도 파일 시스템에서 직접 찾기
+            if (!fileAttachmentOpt.isPresent()) {
+                System.out.println("DB에서 파일 정보를 찾을 수 없음, 파일 시스템에서 직접 검색: " + storedFileName);
+                
+                // 이미지 폴더 확인 (가장 먼저)
+                Path imagePath = Paths.get(uploadDir.trim(), "images", storedFileName);
+                Resource resource = new UrlResource(imagePath.toUri());
+                
+                if (resource.exists() && resource.isReadable()) {
+                    System.out.println("이미지 폴더에서 파일 찾음 (DB 없음): " + imagePath);
+                    return resource;
+                }
+                
+                // uploads 루트 폴더 확인
+                Path rootPath = Paths.get(uploadDir.trim(), storedFileName);
+                resource = new UrlResource(rootPath.toUri());
+                
+                if (resource.exists() && resource.isReadable()) {
+                    System.out.println("루트 폴더에서 파일 찾음 (DB 없음): " + rootPath);
+                    return resource;
+                }
+                
+                throw new ResourceNotFoundException("파일을 찾을 수 없습니다: " + storedFileName);
+            }
+            
+            // DB에 파일 정보가 있는 경우
+            FileAttachment fileAttachment = fileAttachmentOpt.get();
+            
             // 이미지 파일인 경우 images 폴더를 먼저 확인
             if (fileAttachment.getContentType() != null && fileAttachment.getContentType().startsWith("image/")) {
                 Path imagePath = Paths.get(uploadDir.trim(), "images", storedFileName);
