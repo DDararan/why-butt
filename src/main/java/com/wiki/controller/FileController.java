@@ -175,12 +175,15 @@ public class FileController {
      */
     @GetMapping("/download/{storedFileName}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String storedFileName) {
+        System.out.println("파일 다운로드 요청: " + storedFileName);
         try {
             // 파일 정보 조회
             FileAttachmentDto.Response fileInfo = fileService.getFileInfo(storedFileName);
+            System.out.println("파일 정보 조회 성공: " + fileInfo.getOriginalFileName());
             
             // 파일 리소스 조회
             Resource resource = fileService.downloadFile(storedFileName);
+            System.out.println("파일 리소스 조회 성공");
             
             // 파일 다운로드 응답 헤더 설정
             return ResponseEntity.ok()
@@ -189,6 +192,8 @@ public class FileController {
                             "attachment; filename=\"" + fileInfo.getOriginalFileName() + "\"")
                     .body(resource);
         } catch (Exception e) {
+            System.err.println("파일 다운로드 실패: " + storedFileName + " - " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }

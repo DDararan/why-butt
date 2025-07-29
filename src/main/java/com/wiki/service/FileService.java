@@ -210,14 +210,24 @@ public class FileService {
             }
             
             // DB 경로에 파일이 없으면 새로운 페이지별 폴더 구조에서 찾기
-            String sanitizedPageTitle = sanitizeFileName(fileAttachment.getWikiPage().getTitle());
-            Path newFilePath = Paths.get(uploadDir.trim(), sanitizedPageTitle, storedFileName);
-            resource = new UrlResource(newFilePath.toUri());
+            if (fileAttachment.getWikiPage() != null) {
+                String sanitizedPageTitle = sanitizeFileName(fileAttachment.getWikiPage().getTitle());
+                Path newFilePath = Paths.get(uploadDir.trim(), sanitizedPageTitle, storedFileName);
+                resource = new UrlResource(newFilePath.toUri());
+                
+                if (resource.exists() && resource.isReadable()) {
+                    // 새 경로에서 찾았으면 DB 업데이트
+                    fileAttachment.setFilePath(newFilePath.toString());
+                    fileAttachmentRepository.save(fileAttachment);
+                    return resource;
+                }
+            }
+            
+            // 이미지 폴더에서 찾기 (페이지가 없는 이미지의 경우)
+            Path imagePath = Paths.get(uploadDir.trim(), "images", storedFileName);
+            resource = new UrlResource(imagePath.toUri());
             
             if (resource.exists() && resource.isReadable()) {
-                // 새 경로에서 찾았으면 DB 업데이트
-                fileAttachment.setFilePath(newFilePath.toString());
-                fileAttachmentRepository.save(fileAttachment);
                 return resource;
             }
             
