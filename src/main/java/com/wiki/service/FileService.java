@@ -201,7 +201,19 @@ public class FileService {
                 .orElseThrow(() -> new ResourceNotFoundException("파일을 찾을 수 없습니다: " + storedFileName));
         
         try {
-            // 먼저 DB에 저장된 경로를 시도
+            // 이미지 파일인 경우 images 폴더를 먼저 확인
+            if (fileAttachment.getContentType() != null && fileAttachment.getContentType().startsWith("image/")) {
+                Path imagePath = Paths.get(uploadDir.trim(), "images", storedFileName);
+                Resource resource = new UrlResource(imagePath.toUri());
+                
+                System.out.println("이미지 경로 확인: " + imagePath.toString());
+                if (resource.exists() && resource.isReadable()) {
+                    System.out.println("이미지 폴더에서 파일 찾음: " + storedFileName);
+                    return resource;
+                }
+            }
+            
+            // DB에 저장된 경로를 시도
             Path filePath = Paths.get(fileAttachment.getFilePath());
             Resource resource = new UrlResource(filePath.toUri());
             
@@ -223,11 +235,12 @@ public class FileService {
                 }
             }
             
-            // 이미지 폴더에서 찾기 (페이지가 없는 이미지의 경우)
+            // 이미지 폴더에서 다시 찾기 (contentType이 없는 경우를 위해)
             Path imagePath = Paths.get(uploadDir.trim(), "images", storedFileName);
             resource = new UrlResource(imagePath.toUri());
             
             if (resource.exists() && resource.isReadable()) {
+                System.out.println("이미지 폴더에서 파일 찾음 (두번째 시도): " + storedFileName);
                 return resource;
             }
             
@@ -238,6 +251,11 @@ public class FileService {
             if (resource.exists() && resource.isReadable()) {
                 return resource;
             }
+            
+            System.err.println("파일을 찾을 수 없음 - 시도한 경로들:");
+            System.err.println("1. DB 경로: " + filePath);
+            System.err.println("2. 이미지 폴더: " + imagePath);
+            System.err.println("3. 레거시 경로: " + legacyFilePath);
             
             throw new ResourceNotFoundException("파일을 읽을 수 없습니다: " + storedFileName);
             
