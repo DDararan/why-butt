@@ -714,22 +714,6 @@ const PageTree: React.FC<PageTreeProps> = ({ selectedId, onNavigate }) => {
           <Button onClick={handleUpdatePageType} variant="contained">수정</Button>
         </DialogActions>
       </Dialog>
-
-      {/* 디버그 버튼 */}
-      <button
-        onClick={debugYjsSync}
-        style={{
-          padding: '4px 8px',
-          fontSize: '12px',
-          backgroundColor: '#e74c3c',
-          color: 'white',
-          border: 'none',
-          borderRadius: '3px',
-          cursor: 'pointer'
-        }}
-      >
-        Y.js 상태 확인
-      </button>
     </Card>
   );
 };

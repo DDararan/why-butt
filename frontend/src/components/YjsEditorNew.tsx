@@ -23,7 +23,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-import TableToolbar from './TableToolbar';
+import EditorToolbar from './EditorToolbar';
 import './Editor.css';
 import './TipTapEditor.css';
 import { wikiService } from '../services/wikiService';
@@ -628,6 +628,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       const response = await wikiService.post<UploadResponse>('/api/files/images', formData);
       
       if (response.success) {
+        // 서버에서 반환한 전체 URL을 그대로 사용
         return response.filePath;
       } else {
         throw new Error(response.message || '이미지 업로드 실패');
@@ -782,7 +783,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   return (
     <Box sx={{ position: 'relative' }}>
       {editor && (
-        <TableToolbar 
+        <EditorToolbar 
           editor={editor}
           handleToolbarClick={handleToolbarAction}
         />

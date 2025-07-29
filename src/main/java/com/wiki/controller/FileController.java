@@ -226,6 +226,58 @@ public class FileController {
     }
     
     /**
+     * 이미지 파일을 업로드합니다.
+     * 클립보드 붙여넣기나 이미지 업로드 버튼에서 사용됩니다.
+     * 
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL 정보
+     */
+    @PostMapping("/images")
+    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        System.out.println("이미지 업로드 요청 - fileName: " + file.getOriginalFilename());
+        
+        if (file.isEmpty()) {
+            System.out.println("파일이 비어있음");
+            return ResponseEntity.badRequest().body(new ImageUploadResponse(false, "파일이 비어있습니다", null, null));
+        }
+        
+        // 이미지 파일 검증
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            System.out.println("이미지 파일이 아님: " + contentType);
+            return ResponseEntity.badRequest().body(new ImageUploadResponse(false, "이미지 파일만 업로드 가능합니다", null, null));
+        }
+        
+        try {
+            // 임시 페이지 ID 사용 (이미지 업로드는 페이지와 독립적으로 처리)
+            FileAttachmentDto.Response response = fileService.uploadImageFile(file);
+            
+            // 이미지 URL 생성
+            String imageUrl = serverHost + "/api/files/download/" + response.getStoredFileName();
+            System.out.println("이미지 업로드 성공: " + imageUrl);
+            
+            return ResponseEntity.ok(new ImageUploadResponse(true, "이미지 업로드 성공", imageUrl, response.getOriginalFileName()));
+        } catch (Exception e) {
+            System.err.println("이미지 업로드 실패: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ImageUploadResponse(false, "이미지 업로드 중 오류가 발생했습니다: " + e.getMessage(), null, null));
+        }
+    }
+    
+    /**
+     * 이미지 업로드 응답 DTO
+     */
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class ImageUploadResponse {
+        private boolean success;
+        private String message;
+        private String filePath;
+        private String originalName;
+    }
+    
+    /**
      * 기존 파일들을 페이지별 폴더 구조로 마이그레이션합니다.
      * 한 번만 실행하면 되는 관리용 API입니다.
      * 

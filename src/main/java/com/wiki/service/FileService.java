@@ -268,6 +268,68 @@ public class FileService {
     }
     
     /**
+     * 이미지 파일을 업로드합니다.
+     * 페이지와 독립적으로 이미지를 저장하며, 나중에 연결할 수 있습니다.
+     */
+    @Transactional
+    public FileAttachmentDto.Response uploadImageFile(MultipartFile file) {
+        // 이미지 전용 폴더 생성
+        Path imagesPath = Paths.get(uploadDir.trim(), "images");
+        try {
+            Files.createDirectories(imagesPath);
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 폴더 생성에 실패했습니다", e);
+        }
+        
+        // 고유한 파일명 생성
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName == null) {
+            originalFileName = "image";
+        }
+        
+        String extension = "";
+        if (originalFileName.contains(".")) {
+            int lastDotIndex = originalFileName.lastIndexOf(".");
+            extension = originalFileName.substring(lastDotIndex);
+        }
+        
+        // UUID를 사용한 고유한 파일명
+        String storedFileName = UUID.randomUUID().toString() + extension;
+        
+        // 파일 저장
+        Path filePath = imagesPath.resolve(storedFileName);
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 파일 저장에 실패했습니다", e);
+        }
+        
+        // 데이터베이스에 파일 정보 저장 (페이지 연결 없이)
+        FileAttachment fileAttachment = new FileAttachment();
+        fileAttachment.setOriginalFileName(originalFileName);
+        fileAttachment.setStoredFileName(storedFileName);
+        fileAttachment.setFilePath(filePath.toString());
+        fileAttachment.setFileSize(file.getSize());
+        fileAttachment.setContentType(file.getContentType());
+        fileAttachment.setUploadedBy("시스템");
+        // wikiPage는 null로 둠 (나중에 연결 가능)
+        
+        FileAttachment savedFile = fileAttachmentRepository.save(fileAttachment);
+        
+        // 페이지가 없는 경우를 위한 특별한 DTO 생성
+        return new FileAttachmentDto.Response(
+                savedFile.getId(),
+                savedFile.getOriginalFileName(),
+                savedFile.getStoredFileName(),
+                savedFile.getFileSize(),
+                savedFile.getContentType(),
+                savedFile.getUploadedBy(),
+                null, // pageTitle은 null
+                savedFile.getUploadedAt()
+        );
+    }
+    
+    /**
      * 기존 파일들을 페이지별 폴더 구조로 마이그레이션합니다.
      * 한 번만 실행하면 되는 마이그레이션 메서드입니다.
      */
