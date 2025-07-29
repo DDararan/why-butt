@@ -228,7 +228,70 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         HTMLAttributes: { class: 'code-block' },
       }),
       Highlight.configure({ multicolor: true }),
-      Image.configure({
+      Image.extend({
+        addProseMirrorPlugins() {
+          return [
+            ...(this.parent?.() || []),
+            {
+              props: {
+                handlePaste: (view, event) => {
+                  const items = event.clipboardData?.items;
+                  if (!items) return false;
+
+                  for (const item of items) {
+                    if (item.type.indexOf('image') === 0) {
+                      const file = item.getAsFile();
+                      if (!file) continue;
+
+                      event.preventDefault();
+
+                      // FileReader를 사용하여 base64로 변환
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        const base64 = e.target?.result as string;
+                        console.log('[이미지붙여넣기] base64 변환 완료');
+                        
+                        const { schema } = view.state;
+                        const node = schema.nodes.image.create({ src: base64 });
+                        const transaction = view.state.tr.replaceSelectionWith(node);
+                        view.dispatch(transaction);
+                      };
+                      reader.readAsDataURL(file);
+
+                      return true;
+                    }
+                  }
+                  return false;
+                },
+                handleDrop: (view, event) => {
+                  const files = event.dataTransfer?.files;
+                  if (!files || files.length === 0) return false;
+
+                  const file = files[0];
+                  if (!file.type.startsWith('image/')) return false;
+
+                  event.preventDefault();
+
+                  // FileReader를 사용하여 base64로 변환
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const base64 = e.target?.result as string;
+                    console.log('[이미지드롭] base64 변환 완료');
+                    
+                    const { schema } = view.state;
+                    const node = schema.nodes.image.create({ src: base64 });
+                    const transaction = view.state.tr.replaceSelectionWith(node);
+                    view.dispatch(transaction);
+                  };
+                  reader.readAsDataURL(file);
+
+                  return true;
+                },
+              },
+            },
+          ];
+        },
+      }).configure({
         inline: true,
         HTMLAttributes: { class: 'editor-image' },
       }),
