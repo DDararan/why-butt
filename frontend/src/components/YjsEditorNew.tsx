@@ -22,7 +22,6 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import { Plugin } from 'prosemirror-state';
 
 import EditorToolbar from './EditorToolbar';
 import './Editor.css';
@@ -178,7 +177,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         maxBackoffTime: 10000,
         disableBc: true,
         // WebSocket URL 연결 방식 변경
-        resyncInterval: -1,
+        resyncInterval: 5000,
       }
     );
     
@@ -229,128 +228,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         HTMLAttributes: { class: 'code-block' },
       }),
       Highlight.configure({ multicolor: true }),
-      Image.extend({
-        addAttributes() {
-          return {
-            ...this.parent?.(),
-            src: {
-              default: null,
-              parseHTML: element => element.getAttribute('src'),
-              renderHTML: attributes => {
-                // base64 이미지는 그대로 사용
-                if (attributes.src?.startsWith('data:')) {
-                  return { src: attributes.src };
-                }
-                // 일반 URL도 그대로 사용 (서버 요청 없이)
-                return { src: attributes.src };
-              },
-            },
-          };
-        },
-        parseHTML() {
-          return [
-            {
-              tag: 'img[src]',
-              getAttrs: dom => {
-                if (typeof dom === 'string') return false;
-                const element = dom as HTMLElement;
-                const src = element.getAttribute('src');
-                // src가 있으면 그대로 사용
-                return { src };
-              },
-            },
-          ];
-        },
-        addProseMirrorPlugins() {
-          return [
-            ...(this.parent?.() || []),
-            new Plugin({
-              props: {
-                handlePaste: (view, event) => {
-                  console.log('[이미지붙여넣기] handlePaste 호출됨');
-                  const items = event.clipboardData?.items;
-                  if (!items) {
-                    console.log('[이미지붙여넣기] clipboardData.items가 없음');
-                    return false;
-                  }
-
-                  console.log('[이미지붙여넣기] 클립보드 아이템 개수:', items.length);
-                  
-                  for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    console.log(`[이미지붙여넣기] 아이템 ${i}: type=${item.type}, kind=${item.kind}`);
-                    
-                    if (item.type.indexOf('image') === 0) {
-                      console.log('[이미지붙여넣기] 이미지 아이템 발견');
-                      const file = item.getAsFile();
-                      if (!file) {
-                        console.log('[이미지붙여넣기] getAsFile() 실패');
-                        continue;
-                      }
-
-                      console.log('[이미지붙여넣기] 파일 정보:', {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type
-                      });
-
-                      event.preventDefault();
-
-                      // FileReader를 사용하여 base64로 변환
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        const base64 = e.target?.result as string;
-                        console.log('[이미지붙여넣기] base64 변환 완료, 길이:', base64.length);
-                        console.log('[이미지붙여넣기] base64 시작부분:', base64.substring(0, 50));
-                        
-                        const { schema } = view.state;
-                        const node = schema.nodes.image.create({ src: base64 });
-                        console.log('[이미지붙여넣기] 이미지 노드 생성:', node);
-                        
-                        const transaction = view.state.tr.replaceSelectionWith(node);
-                        view.dispatch(transaction);
-                        console.log('[이미지붙여넣기] 트랜잭션 dispatch 완료');
-                      };
-                      reader.onerror = (error) => {
-                        console.error('[이미지붙여넣기] FileReader 오류:', error);
-                      };
-                      reader.readAsDataURL(file);
-
-                      return true;
-                    }
-                  }
-                  console.log('[이미지붙여넣기] 이미지 아이템을 찾지 못함');
-                  return false;
-                },
-                handleDrop: (view, event) => {
-                  const files = event.dataTransfer?.files;
-                  if (!files || files.length === 0) return false;
-
-                  const file = files[0];
-                  if (!file.type.startsWith('image/')) return false;
-
-                  event.preventDefault();
-
-                  // FileReader를 사용하여 base64로 변환
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    const base64 = e.target?.result as string;
-                    console.log('[이미지드롭] base64 변환 완료');
-                    
-                    const { schema } = view.state;
-                    const node = schema.nodes.image.create({ src: base64 });
-                    const transaction = view.state.tr.replaceSelectionWith(node);
-                    view.dispatch(transaction);
-                  };
-                  reader.readAsDataURL(file);
-
-                  return true;
-                },
-              },
-            }),
-          ];
-        },
-      }).configure({
+      Image.configure({
         inline: true,
         allowBase64: true,
         HTMLAttributes: { class: 'editor-image' },
@@ -629,6 +507,21 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             console.log('[키입력3-2] 에디터 현재 상태:');
             console.log('  - 에디터 HTML:', editorContent.substring(0, 100) + '...');
             console.log('  - 에디터 길이:', editorContent.length);
+            
+            // 이미지가 포함된 경우 WebSocket 전송 확인
+            if (editorContent.includes('<img')) {
+              console.log('[이미지동기화] 이미지가 포함된 Y.js 업데이트 감지');
+              console.log('[이미지동기화] wsProvider 연결 상태:', wsProvider.wsconnected);
+              console.log('[이미지동기화] WebSocket readyState:', wsProvider.ws?.readyState);
+              
+              // Y.js는 자동으로 브로드캐스트해야 함
+              // 수동으로 동기화 트리거
+              if (wsProvider.wsconnected) {
+                console.log('[이미지동기화] WebSocket이 연결되어 있음 - Y.js가 자동으로 브로드캐스트해야 함');
+              } else {
+                console.log('[이미지동기화] WebSocket이 연결되어 있지 않음!');
+              }
+            }
           }
         }
         
@@ -640,6 +533,31 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             contentLength: currentContent.length,
             content: currentContent.substring(0, 100) + '...'
           });
+          
+          // 이미지가 포함된 업데이트인지 확인
+          if (currentContent.includes('<img')) {
+            console.log('[원격이미지] 원격에서 이미지 업데이트 수신');
+            const imgMatch = currentContent.match(/<img[^>]+src="([^"]+)"/);
+            if (imgMatch) {
+              console.log('[원격이미지] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
+              
+              // 에디터 강제 리렌더링
+              setTimeout(() => {
+                if (editor && !editor.isDestroyed) {
+                  // 현재 selection 저장
+                  const { from, to } = editor.state.selection;
+                  
+                  // 에디터 view 강제 업데이트
+                  editor.view.updateState(editor.view.state);
+                  
+                  // selection 복원
+                  editor.commands.setTextSelection({ from, to });
+                  
+                  console.log('[원격이미지] 에디터 view 강제 업데이트 완료');
+                }
+              }, 50);
+            }
+          }
         }
         
         // onChange 호출 및 백엔드 동기화
@@ -769,6 +687,46 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     }
   }, [editor]);
 
+  // 이미지 붙여넣기 처리 (Y.js 동기화를 위해 에디터 레벨에서 처리)
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData?.items;
+    if (!items || !editor) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const file = item.getAsFile();
+        if (file) {
+          console.log('[이미지붙여넣기] 파일 크기:', file.size);
+          
+          // 원본 이미지 사용
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            console.log('[이미지붙여넣기-에디터레벨] base64 변환 완료');
+            console.log('[이미지붙여넣기-에디터레벨] 원본 크기:', base64.length);
+            
+            // skipBroadcast 플래그 해제
+            skipBroadcastRef.current = false;
+            
+            // 에디터 commands를 사용하여 Y.js가 자동으로 동기화
+            setTimeout(() => {
+              editor.chain().focus().setImage({ src: base64 }).run();
+              console.log('[이미지붙여넣기-에디터레벨] 원본 이미지 에디터 명령 실행 완료');
+            }, 100);
+          };
+          reader.readAsDataURL(file);
+        }
+        return true;
+      }
+    }
+    return false;
+  }, [editor]);
+
   // 연결 상태 표시
   const getConnectionIndicator = () => {
     
@@ -886,6 +844,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             },
           },
         }}
+        onPaste={handlePaste}
       >
         <EditorContent editor={editor} />
       </Box>

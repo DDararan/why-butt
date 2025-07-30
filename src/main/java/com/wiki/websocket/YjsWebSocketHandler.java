@@ -327,6 +327,17 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     byte[] update = Arrays.copyOfRange(message, 2, message.length);
                     System.out.println("[키입력7] 업데이트 크기: " + update.length + " bytes");
                     
+                    // 큰 업데이트(이미지 포함 가능성) 감지
+                    if (update.length > 10000) {
+                        System.out.println("[이미지업데이트] 큰 업데이트 감지 (" + update.length + " bytes) - 이미지 포함 가능성");
+                        
+                        // 업데이트 내용 일부 확인 (base64 이미지 패턴 찾기)
+                        String updateStr = new String(update, java.nio.charset.StandardCharsets.UTF_8);
+                        if (updateStr.contains("data:image")) {
+                            System.out.println("[이미지업데이트] base64 이미지 데이터 감지됨");
+                        }
+                    }
+                    
                     // 업데이트를 저장하고 브로드캐스트
                     doc.addUpdate(update);
                     dirtyDocuments.add(roomName);
