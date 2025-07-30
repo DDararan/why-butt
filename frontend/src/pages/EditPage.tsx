@@ -450,25 +450,6 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
     originalName: string;
   }
 
-  // 이미지 업로드 함수
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await wikiService.post<UploadResponse>('/api/files/images', formData);
-      
-      if (response.success) {
-        return response.filePath;
-      } else {
-        throw new Error(response.message || '이미지 업로드 실패');
-      }
-    } catch (error) {
-      console.error('이미지 업로드 오류:', error);
-      throw error;
-    }
-  };
-
   // 클립보드 붙여넣기 처리
   const handlePaste = async (event: React.ClipboardEvent<HTMLDivElement>) => {
     const items = event.clipboardData?.items;
@@ -486,11 +467,6 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
             setError(null);
             const uploadingText = '\n![업로드 중...](uploading)\n';
             setContent(prev => prev + uploadingText);
-            
-            const filePath = await uploadImage(file);
-            
-            const imageMarkdown = `\n![이미지](${filePath})\n`;
-            setContent(prev => prev.replace(uploadingText, imageMarkdown));
             
           } catch (error) {
             setContent(prev => prev.replace('\n![업로드 중...](uploading)\n', ''));

@@ -230,6 +230,37 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       }),
       Highlight.configure({ multicolor: true }),
       Image.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            src: {
+              default: null,
+              parseHTML: element => element.getAttribute('src'),
+              renderHTML: attributes => {
+                // base64 이미지는 그대로 사용
+                if (attributes.src?.startsWith('data:')) {
+                  return { src: attributes.src };
+                }
+                // 일반 URL도 그대로 사용 (서버 요청 없이)
+                return { src: attributes.src };
+              },
+            },
+          };
+        },
+        parseHTML() {
+          return [
+            {
+              tag: 'img[src]',
+              getAttrs: dom => {
+                if (typeof dom === 'string') return false;
+                const element = dom as HTMLElement;
+                const src = element.getAttribute('src');
+                // src가 있으면 그대로 사용
+                return { src };
+              },
+            },
+          ];
+        },
         addProseMirrorPlugins() {
           return [
             ...(this.parent?.() || []),
@@ -321,11 +352,8 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         },
       }).configure({
         inline: true,
+        allowBase64: true,
         HTMLAttributes: { class: 'editor-image' },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: { class: 'editor-link' },
       }),
       Placeholder.configure({
         placeholder: '내용을 입력하세요...',
@@ -719,65 +747,6 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
     }, 0);
   };
 
-  // 이미지 업로드 함수
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      interface UploadResponse {
-        success: boolean;
-        message: string;
-        filePath: string;
-        originalName: string;
-      }
-
-      const response = await wikiService.post<UploadResponse>('/api/files/images', formData);
-      
-      if (response.success) {
-        // 서버에서 반환한 전체 URL을 그대로 사용
-        return response.filePath;
-      } else {
-        throw new Error(response.message || '이미지 업로드 실패');
-      }
-    } catch (error) {
-      console.error('이미지 업로드 오류:', error);
-      throw error;
-    }
-  };
-
-  // 클립보드 붙여넣기 처리
-  const handlePaste = async (event: React.ClipboardEvent<HTMLDivElement>) => {
-    const items = event.clipboardData?.items;
-    if (!items) return;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      
-      if (item.type.startsWith('image/')) {
-        event.preventDefault();
-        
-        const file = item.getAsFile();
-        if (file) {
-          try {
-            const filePath = await uploadImage(file);
-            
-            if (editor) {
-              const imageUrl = filePath;
-              handleToolbarAction(() => {
-                editor.chain().focus().setImage({ src: imageUrl }).run();
-              });
-            }
-          } catch (error) {
-            console.error('이미지 업로드 실패:', error);
-            alert('이미지 업로드에 실패했습니다.');
-          }
-        }
-        break;
-      }
-    }
-  };
-
   // IME 조합 이벤트 감지
   useEffect(() => {
     const handleCompositionStart = () => {
@@ -917,7 +886,6 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             },
           },
         }}
-        onPaste={handlePaste}
       >
         <EditorContent editor={editor} />
       </Box>
