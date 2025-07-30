@@ -99,6 +99,8 @@ public class WikiPageDto {
             private LocalDateTime updatedAt;
             private List<Summary> children;
             private Integer fileCount;
+            private String creationStaffId;
+            private String creationStaffName;
         }
 
         @Data

@@ -178,7 +178,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         maxBackoffTime: 10000,
         disableBc: true,
         // WebSocket URL 연결 방식 변경
-        resyncInterval: 5000,
+        resyncInterval: -1,
       }
     );
     
@@ -662,8 +662,8 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             const htmlContent = editor.getHTML();
             onChangeRef.current(htmlContent);
             // 백엔드로 동기화
-            console.log('[키입력5] 백엔드 동기화 시작 (2초 디바운스)');
-            syncContentToBackend(htmlContent);
+            // console.log('[키입력5] 백엔드 동기화 시작 (2초 디바운스)');
+            // syncContentToBackend(htmlContent);
           }
         }
       });

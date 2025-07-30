@@ -73,7 +73,7 @@ public class WikiPageController {
                 return ResponseEntity.status(401).body("로그인이 필요합니다.");
             }
             
-            WikiPageDto.Response.Detail createdPage = wikiPageService.createPage(request, user.getStaffId());
+            WikiPageDto.Response.Detail createdPage = wikiPageService.createPage(request, user.getStaffId(), user.getUserName());
             return ResponseEntity.ok(createdPage);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("페이지 생성 실패: " + e.getMessage());
@@ -93,7 +93,7 @@ public class WikiPageController {
             }
             
             WikiPageDto.Response.Detail currentPage = wikiPageService.getPage(title);
-            WikiPageDto.Response.Detail updatedPage = wikiPageService.updatePage(currentPage.getId(), request, user.getStaffId());
+            WikiPageDto.Response.Detail updatedPage = wikiPageService.updatePage(currentPage.getId(), request, user.getStaffId(), user.getUserName());
             return ResponseEntity.ok(updatedPage);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("페이지 수정 실패: " + e.getMessage());
@@ -112,7 +112,7 @@ public class WikiPageController {
                 return ResponseEntity.status(401).body("로그인이 필요합니다.");
             }
             
-            WikiPageDto.Response.Detail updatedPage = wikiPageService.updatePageById(id, request, user.getStaffId());
+            WikiPageDto.Response.Detail updatedPage = wikiPageService.updatePageById(id, request, user.getStaffId(), user.getUserName());
             return ResponseEntity.ok(updatedPage);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("페이지 수정 실패: " + e.getMessage());
@@ -186,6 +186,25 @@ public class WikiPageController {
     }
 
     /**
+     * 기존 데이터의 누락된 staff name 채우기 (임시 마이그레이션용)
+     */
+    @PostMapping("/fix-staff-names")
+    public ResponseEntity<String> fixStaffNames(HttpSession session) {
+        try {
+            // 로그인 확인
+            UserDto.Response.Login user = (UserDto.Response.Login) session.getAttribute("user");
+            if (user == null) {
+                return ResponseEntity.status(401).body("로그인이 필요합니다.");
+            }
+            
+            wikiPageService.fillMissingStaffNames();
+            return ResponseEntity.ok("누락된 staff name 업데이트 완료");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("staff name 업데이트 실패: " + e.getMessage());
+        }
+    }
+    
+    /**
      * Y.js 동시편집 콘텐츠 업데이트
      * WebSocket 핸들러에서 호출되는 내부 API
      */
@@ -200,27 +219,18 @@ public class WikiPageController {
                     .body(Map.of("success", false, "message", "Content is required"));
             }
             
-            // 기존 페이지 조회
-            WikiPageDto.Response.Detail page = wikiPageService.getPageById(id);
-            if (page == null) {
+            // Y.js 자동 저장으로 컨텐츠만 업데이트 (수정자 정보는 변경하지 않음)
+            boolean success = wikiPageService.updateContent(id, content);
+            
+            if (success) {
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "pageId", id,
+                    "timestamp", System.currentTimeMillis()
+                ));
+            } else {
                 return ResponseEntity.notFound().build();
             }
-            
-            // 콘텐츠만 업데이트
-            WikiPageDto.Request.Update updateRequest = WikiPageDto.Request.Update.builder()
-                .title(page.getTitle())
-                .content(content)
-                .pageType(page.getPageType())
-                .parentId(page.getParentId())
-                .build();
-            
-            wikiPageService.updatePage(id, updateRequest, "SYSTEM");
-            
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "pageId", id,
-                "timestamp", System.currentTimeMillis()
-            ));
         } catch (Exception e) {
             log.error("Y.js 콘텐츠 동기화 실패: pageId={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

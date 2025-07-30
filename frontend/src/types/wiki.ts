@@ -9,6 +9,8 @@ export interface WikiPage {
     pageType: string;
     createdAt: string;
     updatedAt: string;
+    creationStaffId: string; 
+    creationStaffName: string;
     children?: WikiPageSummary[];
     history?: WikiPageHistory[];
 }
@@ -22,6 +24,8 @@ export interface WikiPageSummary {
     displayOrder: number;
     pageType: string;
     updatedAt: string;
+    creationStaffId: string;
+    creationStaffName: string;
     children?: WikiPageSummary[];
     fileCount?: number;
 }
@@ -37,6 +41,8 @@ export interface WikiPageDetail {
     pageType: string;
     createdAt: string;
     updatedAt: string;
+    creationStaffId: string;
+    creationStaffName: string;
     children?: WikiPageSummary[];
     parent?: WikiPageSummary;
     history?: WikiPageHistory[];

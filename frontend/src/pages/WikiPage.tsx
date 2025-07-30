@@ -70,16 +70,24 @@ const WikiPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [recentPages, setRecentPages] = useState<WikiPageType[]>([]);
 
   useEffect(() => {
-    const fetchPage = async () => {
-      if (!id) return;
-      
+    const fetchPageData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const fetchedPage = await wikiService.getPageById(parseInt(id));
-        setPage(fetchedPage);
+        
+        if (!id) {
+          // ID가 없을 때는 최근 일주일 페이지 목록을 가져옴
+          console.log('[WikiPage] ID가 없음 - 최근 일주일 페이지 목록 가져오기');
+          const recentWeekPages = await wikiService.getRecentWeekPages();
+          setRecentPages(recentWeekPages as WikiPageType[]);
+        } else {
+          // ID가 있을 때는 해당 페이지 정보를 가져옴
+          const fetchedPage = await wikiService.getPageById(parseInt(id));
+          setPage(fetchedPage);
+        }
       } catch (error) {
         if ((error as any)?.response?.status === 404) {
           setError('페이지를 찾을 수 없습니다.');
@@ -91,7 +99,7 @@ const WikiPage: React.FC = () => {
       }
     };
 
-    fetchPage();
+    fetchPageData();
   }, [id]);
 
   useEffect(() => {
@@ -333,6 +341,59 @@ const WikiPage: React.FC = () => {
     );
   }
 
+  // ID가 없을 때 (메인 페이지) - 최근 일주일 페이지 목록 표시
+  if (!id) {
+    return (
+      <Box>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
+          최근 일주일 생성된 페이지
+        </Typography>
+        
+        {recentPages.length > 0 ? (
+          <Grid container spacing={2}>
+            {recentPages.map((recentPage) => (
+              <Grid item xs={12} key={recentPage.id}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                  onClick={() => navigate(`/wiki/${recentPage.id}`)}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="h6" component="h2">
+                        {recentPage.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {recentPage.pageType} | 수정: {new Date(recentPage.updatedAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={recentPage.creationStaffName || recentPage.creationStaffId || '작성자 없음'}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary">
+              최근 일주일 동안 수정된 페이지가 없습니다.
+            </Typography>
+          </Paper>
+        )}
+      </Box>
+    );
+  }
+  
   if (!page) return null;
 
   return (

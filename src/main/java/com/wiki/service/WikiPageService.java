@@ -90,14 +90,16 @@ public class WikiPageService {
     }
 
     @Transactional
-    public WikiPageDto.Response.Detail createPage(WikiPageDto.Request.Create request, String currentUserStaffId) {
+    public WikiPageDto.Response.Detail createPage(WikiPageDto.Request.Create request, String currentUserStaffId, String currentUserStaffName) {
         WikiPage page = new WikiPage();
         page.setTitle(request.getTitle());
         page.setContent(request.getContent());
         
         // 작성자 정보 설정
         page.setCreationStaffId(currentUserStaffId);
+        page.setCreationStaffName(currentUserStaffName);
         page.setModifyStaffId(currentUserStaffId);
+        page.setModifyStaffName(currentUserStaffName);
         
         // 페이지 타입 설정 로직: 최상위 페이지만 직접 타입 선택 가능, 하위 페이지는 부모 타입을 따름
         if (request.getParentId() != null) {
@@ -124,7 +126,7 @@ public class WikiPageService {
     }
 
     @Transactional
-    public WikiPageDto.Response.Detail updatePage(Long pageId, WikiPageDto.Request.Update request, String currentUserStaffId) {
+    public WikiPageDto.Response.Detail updatePage(Long pageId, WikiPageDto.Request.Update request, String currentUserStaffId, String currentUserStaffName) {
         Optional<WikiPage> pageOptional = wikiPageRepository.findById(pageId);
         WikiPage page;
         if (pageOptional.isPresent()) {
@@ -135,6 +137,7 @@ public class WikiPageService {
 
         // 수정자 정보 설정
         page.setModifyStaffId(currentUserStaffId);
+        page.setModifyStaffName(currentUserStaffName);
 
         // 제목 업데이트
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
@@ -178,7 +181,7 @@ public class WikiPageService {
     }
 
     @Transactional
-    public WikiPageDto.Response.Detail updatePageById(Long id, WikiPageDto.Request.Update request, String currentUserStaffId) {
+    public WikiPageDto.Response.Detail updatePageById(Long id, WikiPageDto.Request.Update request, String currentUserStaffId, String currentUserStaffName) {
         Optional<WikiPage> pageOptional = wikiPageRepository.findById(id);
         WikiPage page;
         if (pageOptional.isPresent()) {
@@ -189,6 +192,7 @@ public class WikiPageService {
 
         // 수정자 정보 설정
         page.setModifyStaffId(currentUserStaffId);
+        page.setModifyStaffName(currentUserStaffName);
 
         // 제목 업데이트
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
@@ -641,6 +645,8 @@ public class WikiPageService {
         summary.setPageType(page.getPageType());
         summary.setUpdatedAt(page.getUpdatedAt());
         summary.setFileCount((int) fileAttachmentRepository.countByWikiPage(page));
+        summary.setCreationStaffId(page.getCreationStaffId());
+        summary.setCreationStaffName(page.getCreationStaffName());
         List<WikiPageDto.Response.Summary> children = new ArrayList<>();
         // 자식 페이지들을 displayOrder로 정렬
         List<WikiPage> sortedChildren = page.getChildren().stream()
@@ -750,6 +756,43 @@ public class WikiPageService {
     }
     
     /**
+     * 기존 데이터의 누락된 staff name 채우기
+     * creation_staff_id는 있지만 creation_staff_name이 없는 경우 업데이트
+     */
+    @Transactional
+    public void fillMissingStaffNames() {
+        List<WikiPage> allPages = wikiPageRepository.findAll();
+        int updatedCount = 0;
+        
+        for (WikiPage page : allPages) {
+            boolean needsUpdate = false;
+            
+            // creation_staff_name이 null이지만 creation_staff_id가 있는 경우
+            if (page.getCreationStaffName() == null && page.getCreationStaffId() != null) {
+                // 기본값으로 staffId를 사용
+                page.setCreationStaffName(page.getCreationStaffId());
+                needsUpdate = true;
+                log.info("페이지 {} - creation_staff_name 업데이트: {}", page.getId(), page.getCreationStaffId());
+            }
+            
+            // modify_staff_name이 null이지만 modify_staff_id가 있는 경우
+            if (page.getModifyStaffName() == null && page.getModifyStaffId() != null) {
+                // 기본값으로 staffId를 사용
+                page.setModifyStaffName(page.getModifyStaffId());
+                needsUpdate = true;
+                log.info("페이지 {} - modify_staff_name 업데이트: {}", page.getId(), page.getModifyStaffId());
+            }
+            
+            if (needsUpdate) {
+                wikiPageRepository.save(page);
+                updatedCount++;
+            }
+        }
+        
+        log.info("총 {} 개의 페이지에서 누락된 staff name을 업데이트했습니다.", updatedCount);
+    }
+    
+    /**
      * 페이지 컨텐츠만 업데이트 (Y.js 자동 저장용)
      * 
      * @param pageId 페이지 ID
@@ -763,7 +806,9 @@ public class WikiPageService {
             if (pageOptional.isPresent()) {
                 WikiPage page = pageOptional.get();
                 page.setContent(content);
-                page.setModifyStaffId("SYSTEM"); // Y.js 자동 저장임을 표시
+                // Y.js 자동 저장은 수정자 정보를 변경하지 않음
+                // 기존의 creation_staff_name과 modify_staff_name을 유지
+                // page.setModifyStaffId("SYSTEM"); // 제거 - 기존 수정자 정보 유지
                 wikiPageRepository.save(page);
                 log.info("페이지 컨텐츠 자동 저장 완료 - pageId: {}", pageId);
                 return true;

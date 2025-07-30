@@ -49,9 +49,15 @@ public class WikiPage {
 
     @Column(name = "creation_staff_id", length = 20)
     private String creationStaffId;
+    
+    @Column(name = "creation_staff_name", length = 50)
+    private String creationStaffName;
 
     @Column(name = "modify_staff_id", length = 20)
     private String modifyStaffId;
+    
+    @Column(name = "modify_staff_name", length = 50)
+    private String modifyStaffName;
 
     @CreatedDate
     private LocalDateTime createdAt;
