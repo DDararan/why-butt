@@ -177,7 +177,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         maxBackoffTime: 10000,
         disableBc: true,
         // WebSocket URL 연결 방식 변경
-        resyncInterval: 5000,
+        resyncInterval: -1,
       }
     );
     
@@ -378,16 +378,6 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
             setProviderReady(true);
             
             skipBroadcastRef.current = true;
-            
-            // 초기 동기화 대기
-            
-            // 초기 동기화 타임아웃 설정
-            initialSyncTimeoutRef.current = setTimeout(() => {
-              // 초기 동기화 타임아웃
-              console.log('[Y.js] 동기화 타임아웃 - 강제로 동기화 완료 처리');
-              setInitialSyncCompleted(true);
-            }, 5000);
-            
             // Y.Doc과 Provider 연결 상태 확인
           }
         });
@@ -626,7 +616,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
         }
       }
     };
-  }, [wsProvider, editor, editorReady, documentName, defaultValue, ydoc, initialSyncCompleted, syncContentToBackend, skipBroadcast, handleInitialDataSync]);
+  }, [wsProvider, editor, editorReady, documentName, defaultValue, ydoc, initialSyncCompleted, handleInitialDataSync]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
