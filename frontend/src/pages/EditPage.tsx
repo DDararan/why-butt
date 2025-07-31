@@ -86,6 +86,9 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
   // 제목 입력 필드에 대한 ref 추가
   const titleInputRef = useRef<HTMLInputElement>(null);
   
+  // YjsEditorNew ref 추가 (UndoManager 접근용)
+  const editorRef = useRef<{ handleUndoAll: () => void } | null>(null);
+  
   // WebSocket 연결 상태 관리 ref (리렌더링 방지용)
   const websocketInitializedRef = useRef(false);
   const currentPageIdRef = useRef<string | null>(null);
@@ -420,6 +423,12 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
       }
     }
     
+    // YjsEditorNew의 UndoManager를 통해 모든 변경사항 취소
+    if (editorRef.current?.handleUndoAll) {
+      console.log('[EditPage] 취소 버튼 클릭 - UndoManager로 변경사항 취소');
+      editorRef.current.handleUndoAll();
+    }
+    
     // 페이지 이동 시 언마운트 플래그 설정
     console.log('🚪 페이지 이동 - 언마운트 플래그 설정 (handleCancel)');
     isUnmountingRef.current = true;
@@ -508,14 +517,14 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }} data-editpage-mounted="true">
-      <Box sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 3 }}>
+    <Container maxWidth={false} sx={{ mt: 2, mb: 2, px: 2 }} data-editpage-mounted="true">
+      <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 3 }}>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
         {/* 히스토리 비교 모드에서는 실시간 편집 상태 표시 안 함 */}
         
         <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
+          <Grid container spacing={1}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -524,11 +533,11 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 inputRef={titleInputRef}
-                sx={{ mb: 2 }}
+                sx={{ mb: 1 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth sx={{ mb: 2 }}>
+              <FormControl fullWidth sx={{ mb: 1 }}>
                 <InputLabel>페이지 타입</InputLabel>
                 <Select
                   value={pageType}
@@ -547,7 +556,7 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth sx={{ mb: 2 }}>
+              <FormControl fullWidth sx={{ mb: 1 }}>
                 <InputLabel>상위 페이지</InputLabel>
                 <Select
                   value={parentId || ''}
@@ -569,9 +578,10 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 1, height: 'calc(100vh - 350px)', minHeight: '500px' }}>
             {!isNewPage ? (
               <YjsEditorNew
+                ref={editorRef}
                 key={`yjs-editor-${urlId}`}
                 pageId={parseInt(urlId!)}
                 currentUser={{
@@ -603,7 +613,7 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
             )}
           </Box>
 
-          <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+          <Box sx={{ mt: 1, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
             <Button
               variant="outlined"
               color="secondary"

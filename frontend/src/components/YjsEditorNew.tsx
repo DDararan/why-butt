@@ -49,12 +49,16 @@ const userColors = [
   '#6AB04C', // 초록
 ];
 
-const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
+export interface YjsEditorRef {
+  handleUndoAll: () => void;
+}
+
+const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   pageId,
   currentUser,
   defaultValue = '',
   onChange
-}) => {
+}, ref) => {
   const [editorReady, setEditorReady] = useState(false);
   const [isLocalSynced, setLocalSynced] = useState(false);
   const [isRemoteSynced, setRemoteSynced] = useState(false);
@@ -62,6 +66,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   const [connectedUsers, setConnectedUsers] = useState<Array<{id: string, name: string, color: string}>>([]);
   const [initialSyncCompleted, setInitialSyncCompleted] = useState(false);
   const [skipBroadcast, setSkipBroadcast] = useState(false); // 브로드캐스트 스킵 플래그
+  const [canUndo, setCanUndo] = useState(false); // UndoManager 상태
   
   const ydocRef = useRef<Y.Doc | null>(null);
   const localProviderRef = useRef<IndexeddbPersistence | null>(null);
@@ -75,6 +80,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   const contentSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncedContentRef = useRef<string>('');
   const skipBroadcastRef = useRef(false); // 브로드캐스트 스킵을 ref로 관리
+  const undoManagerRef = useRef<Y.UndoManager | null>(null); // UndoManager 추가
   
   // onChange 최신 값 유지
   useEffect(() => {
@@ -400,6 +406,29 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
               skipBroadcastRef.current = false;
             }, 500);
             
+            // UndoManager 초기화 - 초기 동기화 완료 후 설정
+            if (!undoManagerRef.current) {
+              const fragment = ydoc.getXmlFragment('content');
+              undoManagerRef.current = new Y.UndoManager(fragment, {
+                // 현재 사용자의 변경사항만 추적
+                trackedOrigins: new Set([ydoc.clientID]),
+                captureTimeout: 300, // 300ms 이내의 변경사항은 하나로 그룹화
+              });
+              
+              // UndoManager 상태 변경 감지
+              undoManagerRef.current.on('stack-item-added', () => {
+                console.log('[UndoManager] 변경사항 추가됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
+                setCanUndo(undoManagerRef.current!.undoStack.length > 0);
+              });
+              
+              undoManagerRef.current.on('stack-item-popped', () => {
+                console.log('[UndoManager] 변경사항 취소됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
+                setCanUndo(undoManagerRef.current!.undoStack.length > 0);
+              });
+              
+              console.log('[UndoManager] 초기화 완료 - clientID:', ydoc.clientID);
+            }
+            
             // 약간의 지연을 두고 에디터 내용 확인
             setTimeout(() => {
               console.log('[디버그] setTimeout 내부 실행');
@@ -600,6 +629,13 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
           clearTimeout(syncTimeout);
         }
         
+        // UndoManager 정리
+        if (undoManagerRef.current) {
+          console.log('[UndoManager] 정리 중...');
+          undoManagerRef.current.clear(); // undo/redo 스택 초기화
+          undoManagerRef.current = null;
+        }
+        
         // Provider 정리
         if (localProviderRef.current) {
           // 이미 해제된 provider
@@ -615,8 +651,8 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
           remoteProviderRef.current = null;
         }
       }
-    };
-  }, [wsProvider, editor, editorReady, documentName, defaultValue, ydoc, initialSyncCompleted, handleInitialDataSync]);
+          };
+    }, [wsProvider, editor, editorReady, documentName, defaultValue, ydoc, initialSyncCompleted, handleInitialDataSync]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
@@ -676,6 +712,32 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       };
     }
   }, [editor]);
+
+  // 모든 변경사항 취소 (사용자별 UndoManager 사용)
+  const handleUndoAll = useCallback(() => {
+    if (!undoManagerRef.current) {
+      console.log('[UndoManager] UndoManager가 초기화되지 않음');
+      return;
+    }
+    
+    console.log('[UndoManager] 모든 변경사항 취소 시작');
+    console.log('[UndoManager] 현재 undo 스택 크기:', undoManagerRef.current.undoStack.length);
+    
+    // 모든 변경사항을 한 번에 취소
+    let undoCount = 0;
+    while (undoManagerRef.current.undoStack.length > 0) {
+      undoManagerRef.current.undo();
+      undoCount++;
+    }
+    
+    console.log(`[UndoManager] ${undoCount}개의 변경사항 취소 완료`);
+    setCanUndo(false);
+  }, []);
+
+  // ref로 handleUndoAll 노출
+  React.useImperativeHandle(ref, () => ({
+    handleUndoAll
+  }), [handleUndoAll]);
 
   // 이미지 붙여넣기 처리 (Y.js 동기화를 위해 에디터 레벨에서 처리)
   const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
@@ -805,7 +867,7 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
   }
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {editor && (
         <EditorToolbar 
           editor={editor}
@@ -817,13 +879,16 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       <Box
         className="tiptap-editor"
         sx={{
-          minHeight: '400px',
+          flex: 1,
           border: '1px solid #ddd',
           borderRadius: 1,
-          p: 2,
+          p: 1.5,
           backgroundColor: 'white',
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
           '& .ProseMirror': {
-            minHeight: '350px',
+            flex: 1,
             outline: 'none',
             '& p': {
               margin: 0,
@@ -840,6 +905,6 @@ const YjsEditorNew: React.FC<YjsEditorNewProps> = ({
       </Box>
     </Box>
   );
-};
+});
 
 export default YjsEditorNew;

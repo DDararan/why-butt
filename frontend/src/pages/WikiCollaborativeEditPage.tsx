@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -51,6 +51,9 @@ const WikiCollaborativeEditPage: React.FC = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+  const isResizingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isEditMode = !!id;
 
   useEffect(() => {
@@ -157,6 +160,44 @@ const WikiCollaborativeEditPage: React.FC = () => {
     setContent(value);
   };
 
+  // 리사이징 핸들러
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isResizingRef.current = true;
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizingRef.current || !containerRef.current) return;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const newWidth = e.clientX - containerRect.left;
+    
+    // 최소/최대 너비 제한
+    if (newWidth >= 300 && newWidth <= 1200) {
+      setLeftPanelWidth(newWidth);
+    }
+  };
+
+  const handleMouseUp = () => {
+    isResizingRef.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+
+  // 컴포넌트 언마운트 시 이벤트 리스너 정리
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   if (loading) {
     return (
       <Box>
@@ -177,8 +218,29 @@ const WikiCollaborativeEditPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Paper elevation={2} sx={{ mb: 2, p: 2 }}>
+    <Box 
+      ref={containerRef}
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'row', // 가로 방향으로 변경
+        gap: 0,
+        p: 1,
+        position: 'relative'
+      }}
+    >
+      {/* 왼쪽: 입력 폼 영역 */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          width: `${leftPanelWidth}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          p: 2,
+          overflow: 'auto',
+          flexShrink: 0
+        }}
+      >
         <Typography variant="h5" component="h1" sx={{ mb: 2, color: orange[800], fontWeight: 'bold' }}>
           {isEditMode ? '페이지 수정' : '새 페이지 작성'}
         </Typography>
@@ -189,7 +251,7 @@ const WikiCollaborativeEditPage: React.FC = () => {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
           <TextField
             label="제목"
             value={title}
@@ -209,7 +271,7 @@ const WikiCollaborativeEditPage: React.FC = () => {
             }}
           />
           
-          <FormControl sx={{ minWidth: 200 }}>
+          <FormControl fullWidth>
             <InputLabel>페이지 유형</InputLabel>
             <Select
               value={pageType}
@@ -225,48 +287,90 @@ const WikiCollaborativeEditPage: React.FC = () => {
           </FormControl>
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-          <ButtonGroup variant="contained">
-            <Button
-              onClick={handleCancel}
-              startIcon={<CancelIcon />}
-              sx={{
-                backgroundColor: 'grey.500',
-                '&:hover': {
-                  backgroundColor: 'grey.600',
-                },
-              }}
-            >
-              취소
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saveLoading || !title.trim()}
-              startIcon={<SaveIcon />}
-              sx={{
-                backgroundColor: orange[600],
-                '&:hover': {
-                  backgroundColor: orange[700],
-                },
-              }}
-            >
-              {saveLoading ? '저장 중...' : '저장'}
-            </Button>
-          </ButtonGroup>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 'auto' }}>
+          <Button
+            onClick={handleSave}
+            disabled={saveLoading || !title.trim()}
+            startIcon={<SaveIcon />}
+            variant="contained"
+            fullWidth
+            sx={{
+              backgroundColor: orange[600],
+              '&:hover': {
+                backgroundColor: orange[700],
+              },
+            }}
+          >
+            {saveLoading ? '저장 중...' : '저장'}
+          </Button>
+          <Button
+            onClick={handleCancel}
+            startIcon={<CancelIcon />}
+            variant="outlined"
+            fullWidth
+            sx={{
+              borderColor: 'grey.500',
+              color: 'grey.700',
+              '&:hover': {
+                borderColor: 'grey.600',
+                backgroundColor: 'grey.50',
+              },
+            }}
+          >
+            취소
+          </Button>
         </Box>
       </Paper>
 
-      <Paper elevation={1} sx={{ flex: 1, overflow: 'hidden' }}>
-        <YjsEditorNew
-          pageId={isEditMode ? parseInt(id!) : 0}
-          currentUser={{
-            staffId: currentUser.id,
-            userName: currentUser.name || currentUser.username,
-            loginId: currentUser.username
-          }}
-          defaultValue={content}
-          onChange={handleContentChange}
-        />
+      {/* 리사이저 핸들 */}
+      <Box
+        onMouseDown={handleMouseDown}
+        sx={{
+          width: '8px',
+          height: '100%',
+          cursor: 'col-resize',
+          backgroundColor: 'transparent',
+          '&:hover': {
+            backgroundColor: orange[200],
+          },
+          '&:active': {
+            backgroundColor: orange[300],
+          },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            width: '2px',
+            height: '40px',
+            backgroundColor: 'grey.400',
+            borderRadius: '1px',
+          }
+        }}
+      />
+
+      {/* 오른쪽: 에디터 영역 */}
+      <Paper elevation={1} sx={{ 
+        flex: 1, 
+        overflow: 'hidden', 
+        ml: 1,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <YjsEditorNew
+            pageId={isEditMode ? parseInt(id!) : 0}
+            currentUser={{
+              staffId: currentUser.id,
+              userName: currentUser.name || currentUser.username,
+              loginId: currentUser.username
+            }}
+            defaultValue={content}
+            onChange={handleContentChange}
+          />
+        </Box>
       </Paper>
     </Box>
   );

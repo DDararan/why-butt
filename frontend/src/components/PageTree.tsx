@@ -252,6 +252,9 @@ const MenuItem: React.FC<MenuItemPropsWithDrag> = ({ page, onNavigate, selectedI
                 fontWeight: isSelected ? 'bold' : 'normal',
                 color: isSelected ? orange[900] : 'inherit',
                 fontSize: '0.8rem',
+                whiteSpace: 'nowrap',         // 한 줄로 표시
+                overflow: 'hidden',           // 넘치는 부분 숨김
+                textOverflow: 'ellipsis',     // ... 표시
               },
             }}
           />

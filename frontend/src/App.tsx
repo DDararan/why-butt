@@ -10,6 +10,7 @@ import LoginPage from './components/LoginPage';
 import { PageTreeProvider } from './contexts/PageTreeContext';
 import PageEditor from './components/PageEditor';
 import HistoryComparePage from './pages/HistoryComparePage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 
 interface User {
   staffId: string;
@@ -119,6 +120,7 @@ const App: React.FC = () => {
               <Route path="/pages/new" element={<PageEditor />} />
               <Route path="/pages/:id/edit" element={<PageEditor />} />
               <Route path="/wiki/:id/history/:seqNbr/compare" element={<HistoryComparePage />} />
+              <Route path="/change-password" element={<ChangePasswordPage currentUser={currentUser} />} />
             </Route>
           </Routes>
         </Router>

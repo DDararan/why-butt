@@ -174,4 +174,38 @@ public class UserService {
         summary.setCreatedAt(user.getCreatedAt());
         return summary;
     }
+    
+    /**
+     * 비밀번호 변경
+     * 
+     * @param staffId 직원 ID
+     * @param currentPassword 현재 비밀번호
+     * @param newPassword 새 비밀번호
+     * @throws IllegalArgumentException 현재 비밀번호가 일치하지 않거나 사용자를 찾을 수 없을 때
+     */
+    @Transactional
+    public void changePassword(String staffId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(staffId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        
+        // 현재 비밀번호 확인 (실제 환경에서는 암호화된 비밀번호와 비교해야 함)
+        if (!user.getPassword().equals(currentPassword)) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+        
+        // 새 비밀번호 유효성 검사
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+        }
+        
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("새 비밀번호는 최소 6자 이상이어야 합니다.");
+        }
+        
+        // 비밀번호 변경 (실제 환경에서는 암호화하여 저장해야 함)
+        user.setPassword(newPassword);
+        userRepository.save(user);
+        
+        System.out.println("비밀번호 변경 완료: " + staffId);
+    }
 } 

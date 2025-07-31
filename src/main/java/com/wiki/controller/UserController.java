@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 사용자 관리 API 컨트롤러
@@ -138,6 +139,38 @@ public class UserController {
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    /**
+     * 비밀번호 변경
+     * 
+     * @param request 비밀번호 변경 요청 (현재 비밀번호, 새 비밀번호)
+     * @param session HTTP 세션
+     * @return 성공 응답
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> request, 
+                                          HttpSession session) {
+        try {
+            UserDto.Response.Login user = (UserDto.Response.Login) session.getAttribute("user");
+            
+            if (user == null) {
+                return ResponseEntity.status(401).body("로그인이 필요합니다.");
+            }
+            
+            String currentPassword = request.get("currentPassword");
+            String newPassword = request.get("newPassword");
+            
+            userService.changePassword(user.getStaffId(), currentPassword, newPassword);
+            
+            return ResponseEntity.ok(Map.of("message", "비밀번호가 성공적으로 변경되었습니다."));
+            
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "비밀번호 변경 중 오류가 발생했습니다."));
         }
     }
 } 

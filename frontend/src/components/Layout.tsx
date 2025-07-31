@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, AppBar, Toolbar, Typography, Autocomplete, TextField, InputAdornment, ListItem, ListItemText, Button, Menu, MenuItem, Chip } from '@mui/material';
-import { Search as SearchIcon, AccountCircle, ExitToApp, Home as HomeIcon } from '@mui/icons-material';
+import { Box, AppBar, Toolbar, Typography, Autocomplete, TextField, InputAdornment, ListItem, ListItemText, Button, Menu, MenuItem, Chip, IconButton } from '@mui/material';
+import { Search as SearchIcon, AccountCircle, ExitToApp, Home as HomeIcon, Menu as MenuIcon, MenuOpen as MenuOpenIcon, Add as AddIcon, Lock as LockIcon } from '@mui/icons-material';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import PageTree from './PageTree';
 import { wikiService } from '../services/wikiService';
@@ -27,6 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
   const [searchInput, setSearchInput] = useState('');
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const currentPath = location.pathname;
   const currentId = currentPath.startsWith('/wiki/') && !currentPath.includes('/edit') && !currentPath.includes('/history')
@@ -135,10 +136,39 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
     window.addEventListener('mouseup', onMouseUp);
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+    // localStorage에 상태 저장
+    localStorage.setItem('sidebarOpen', (!isSidebarOpen).toString());
+  };
+
+  // 컴포넌트 마운트 시 localStorage에서 상태 복원
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarOpen');
+    if (savedState !== null) {
+      setIsSidebarOpen(savedState === 'true');
+    }
+  }, []);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f5f5f5' }}>
       <AppBar position="static" sx={{ bgcolor: '#ff9800' }}>
         <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            onClick={toggleSidebar}
+            sx={{ 
+              mr: 1,
+              transition: 'transform 0.3s ease',
+              transform: isSidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)'
+            }}
+            title={isSidebarOpen ? '트리 숨기기' : '트리 보이기'}
+          >
+            <MenuOpenIcon />
+          </IconButton>
+          
           <Typography variant="h6" component="div" sx={{ mr: 3, fontWeight: 'bold' }}>
             WHY-BUTT (와이벗)
           </Typography>
@@ -229,7 +259,7 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
             sx={{
               color: 'white',
               borderColor: 'white',
-              mr: 2,
+              mr: 1,
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 borderColor: 'white'
@@ -238,6 +268,23 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
             variant="outlined"
           >
             홈
+          </Button>
+          
+          <Button
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/wiki/new')}
+            sx={{
+              color: 'white',
+              borderColor: 'white',
+              mr: 2,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderColor: 'white'
+              }
+            }}
+            variant="outlined"
+          >
+            신규 페이지
           </Button>
           
           {currentUser && (
@@ -265,6 +312,13 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
                     {currentUser.userName} ({currentUser.loginId})
                   </Typography>
                 </MenuItem>
+                <MenuItem onClick={() => {
+                  handleUserMenuClose();
+                  navigate('/change-password');
+                }}>
+                  <LockIcon sx={{ mr: 1 }} />
+                  비밀번호 변경
+                </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <ExitToApp sx={{ mr: 1 }} />
                   로그아웃
@@ -278,31 +332,34 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
       <Box sx={{ display: 'flex', flexGrow: 1 }}>
         <Box
           sx={{
-            width: sidebarWidth,
+            width: isSidebarOpen ? sidebarWidth : 0,
             flexShrink: 0,
-            p: 2,
-            borderRight: '1px solid #e0e0e0',
+            p: isSidebarOpen ? 2 : 0,
+            borderRight: isSidebarOpen ? '1px solid #e0e0e0' : 'none',
             bgcolor: 'white',
-            transition: 'width 0.1s',
-            minWidth: 200,
-            maxWidth: 600,
+            transition: 'all 0.3s ease',
+            minWidth: isSidebarOpen ? 200 : 0,
+            maxWidth: isSidebarOpen ? 600 : 0,
             boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
           <PageTree selectedId={currentId} onNavigate={handleNavigate} />
         </Box>
-        <Box
-          sx={{
-            width: 6,
-            cursor: 'col-resize',
-            background: '#eee',
-            zIndex: 1,
-            userSelect: 'none',
-            transition: 'background 0.2s',
-            '&:hover': { background: '#ccc' },
-          }}
-          onMouseDown={handleSidebarResize}
-        />
+        {isSidebarOpen && (
+          <Box
+            sx={{
+              width: 6,
+              cursor: 'col-resize',
+              background: '#eee',
+              zIndex: 1,
+              userSelect: 'none',
+              transition: 'background 0.2s',
+              '&:hover': { background: '#ccc' },
+            }}
+            onMouseDown={handleSidebarResize}
+          />
+        )}
         <Box sx={{ flexGrow: 1, p: 2 }}>
           <Outlet />
         </Box>

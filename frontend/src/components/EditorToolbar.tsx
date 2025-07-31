@@ -227,39 +227,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, handleToolbarClic
           🔗
         </MarkdownButton>
         
-        <MarkdownButton
-          isActive={false}
-          onClick={() => handleToolbarClick(() => addImage())}
-        //  title="이미지"
-        >
-          🖼️
-        </MarkdownButton>
       </Box>
 
       <Divider orientation="vertical" flexItem />
 
-      {/* 실행 취소/다시 실행 */}
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
-        <MarkdownButton
-          isActive={false}
-          onClick={() => handleToolbarClick(() => editor.chain().focus().undo().run())}
-          disabled={!editor.can().chain().focus().undo().run()}
-        //  title="실행 취소 (Ctrl+Z)"
-        >
-          ↶
-        </MarkdownButton>
-        
-        <MarkdownButton
-          isActive={false}
-          onClick={() => handleToolbarClick(() => editor.chain().focus().redo().run())}
-          disabled={!editor.can().chain().focus().redo().run()}
-         // title="다시 실행 (Ctrl+Y)"
-        >
-          ↷
-        </MarkdownButton>
-      </Box>
-
-      <Divider orientation="vertical" flexItem />
 
       {/* 표 도구 */}
       <TableToolbar editor={editor} handleToolbarClick={handleToolbarClick} />

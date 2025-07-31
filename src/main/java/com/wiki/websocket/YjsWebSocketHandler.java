@@ -12,7 +12,6 @@ import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
 import java.net.URLDecoder;
@@ -39,9 +38,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     // 세션별 사용자 정보 (loginId 기반)
     private final Map<String, UserInfo> sessionUserInfo = new ConcurrentHashMap<>();
     
-    
-    // 자동 저장을 위한 스케줄러
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     // 변경된 문서 추적
     private final Set<String> dirtyDocuments = ConcurrentHashMap.newKeySet();
     
@@ -77,12 +73,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                                loginId, userName, pageId, connectedAt);
         }
     }
-    
-    public YjsWebSocketHandler() {
-        // 10초마다 변경된 문서들을 자동 저장
-        scheduler.scheduleWithFixedDelay(this::saveAllDirtyDocuments, 10, 10, TimeUnit.SECONDS);
-    }
-    
+        
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         try {
@@ -327,17 +318,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     byte[] update = Arrays.copyOfRange(message, 2, message.length);
                     System.out.println("[키입력7] 업데이트 크기: " + update.length + " bytes");
                     
-                    // 큰 업데이트(이미지 포함 가능성) 감지
-                    if (update.length > 10000) {
-                        System.out.println("[이미지업데이트] 큰 업데이트 감지 (" + update.length + " bytes) - 이미지 포함 가능성");
-                        
-                        // 업데이트 내용 일부 확인 (base64 이미지 패턴 찾기)
-                        String updateStr = new String(update, java.nio.charset.StandardCharsets.UTF_8);
-                        if (updateStr.contains("data:image")) {
-                            System.out.println("[이미지업데이트] base64 이미지 데이터 감지됨");
-                        }
-                    }
-                    
                     // 업데이트를 저장하고 브로드캐스트
                     doc.addUpdate(update);
                     dirtyDocuments.add(roomName);
@@ -445,10 +425,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                         System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 제거 (Y.js 문서는 이미 없음)");
                     }
                 } else {
-                    // 다른 사용자들에게 사용자 퇴장 알림
-                    if (userInfo != null) {
-                        broadcastUserLeft(roomName, session.getId(), userInfo.loginId);
-                    }
+
                 }
             } else {
                 System.err.println("경고: Room " + roomName + "의 세션 목록을 찾을 수 없음");
@@ -470,110 +447,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                 session.close();
             } catch (IOException e) {
                 logger.debug("이미 닫힌 세션 - 무시: {}", session.getId());
-            }
-        }
-    }
-    
-    // 유틸리티 메서드들
-    
-    private String extractRoomName(String path) {
-        // /ws/yjs/123 형식에서 123 추출 (마지막 세그먼트)
-        if (path == null) return null;
-        
-        String[] parts = path.split("/");
-        for (int i = parts.length - 1; i >= 0; i--) {
-            String part = parts[i].trim();
-            if (!part.isEmpty() && !part.equals("yjs") && !part.equals("ws")) {
-                logger.info("Room 이름 추출: {} -> {}", path, part);
-                return part;
-            }
-        }
-        return null;
-    }
-    
-    private Map<String, String> parseQueryParams(String query) {
-        Map<String, String> params = new HashMap<>();
-        if (query != null) {
-            String[] pairs = query.split("&");
-            for (String pair : pairs) {
-                String[] keyValue = pair.split("=");
-                if (keyValue.length == 2) {
-                    try {
-                        String key = keyValue[0];
-                        String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
-                        params.put(key, value);
-                    } catch (Exception e) {
-                        logger.warn("쿼리 파라미터 디코딩 실패: {}", pair);
-                    }
-                }
-            }
-        }
-        return params;
-    }
-    
-    /**
-     * Y.js Sync Step2 응답을 업데이트와 함께 전송
-     * Y.js 프로토콜: MESSAGE_SYNC + SYNC_STEP2 + 단일 통합 업데이트
-     */
-    private void sendSyncStep2WithUpdates(WebSocketSession session, List<byte[]> updates) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        out.write(MESSAGE_SYNC);
-        out.write(SYNC_STEP2);
-        
-        // 업데이트가 없으면 빈 Step2 전송
-        if (updates == null || updates.isEmpty()) {
-            session.sendMessage(new BinaryMessage(out.toByteArray()));
-            System.out.println("  - Sync Step2 빈 응답 전송");
-            return;
-        }
-        
-        // 모든 업데이트를 하나의 메시지로 병합
-        // Y.js는 Step2에서 단일 업데이트를 기대함
-        ByteArrayOutputStream updateBuffer = new ByteArrayOutputStream();
-        for (byte[] update : updates) {
-            updateBuffer.write(update);
-        }
-        
-        byte[] mergedUpdate = updateBuffer.toByteArray();
-        
-        // VarUint로 업데이트 길이 인코딩 (Y.js 프로토콜 요구사항)
-        writeVarUint(out, mergedUpdate.length);
-        out.write(mergedUpdate);
-        
-        byte[] message = out.toByteArray();
-        session.sendMessage(new BinaryMessage(message));
-        System.out.println("  - Sync Step2 전송 완료 (업데이트 포함, 전체 크기: " + message.length + " bytes)");
-    }
-    
-    /**
-     * Variable-length integer 인코딩 (Y.js 프로토콜용)
-     */
-    private void writeVarUint(ByteArrayOutputStream out, int value) {
-        while (value > 127) {
-            out.write((value & 127) | 128);
-            value >>>= 7;
-        }
-        out.write(value & 127);
-    }
-    
-    /**
-     * 클라이언트에게 업데이트 전송
-     * 각 업데이트를 개별 SYNC_UPDATE 메시지로 전송
-     */
-    private void sendUpdatesToClient(WebSocketSession session, List<byte[]> updates) throws IOException {
-        for (int i = 0; i < updates.size(); i++) {
-            byte[] update = updates.get(i);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            out.write(MESSAGE_SYNC);
-            out.write(SYNC_UPDATE);
-            out.write(update);
-            
-            try {
-                session.sendMessage(new BinaryMessage(out.toByteArray()));
-                System.out.println("    - 업데이트 " + (i + 1) + "/" + updates.size() + " 전송 (크기: " + update.length + " bytes)");
-            } catch (IOException e) {
-                System.err.println("    - 업데이트 " + (i + 1) + " 전송 실패: " + e.getMessage());
-                throw e;
             }
         }
     }
@@ -631,16 +504,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         System.out.println("[키입력15] 브로드캐스트 완료: 성공 " + successCount + "건, 실패 " + failCount + "건");
     }
     
-    private void broadcastUserJoined(String roomName, String sessionId, String loginId, String userName) {
-        // Awareness 업데이트로 사용자 접속 알림
-        logger.info("사용자 접속 알림 - Room: {}, loginId: {}, userName: {}", roomName, loginId, userName);
-    }
-    
-    private void broadcastUserLeft(String roomName, String sessionId, String loginId) {
-        // Awareness 업데이트로 사용자 퇴장 알림
-        logger.info("사용자 퇴장 알림 - Room: {}, loginId: {}", roomName, loginId);
-    }
-    
     private void sendConnectedUsers(WebSocketSession session, String roomName) {
         // 현재 접속한 사용자 목록 전송
         Set<WebSocketSession> sessions = roomSessions.get(roomName);
@@ -655,9 +518,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             logger.debug("접속 사용자 목록 전송 - Room: {}, 사용자 수: {}", roomName, users.size());
         }
     }
-    
-    // concatenateUpdates 메소드는 더 이상 사용하지 않음
-    // Y.js 프로토콜에 따라 각 업데이트는 개별적으로 전송되어야 함
     
     private void saveDocumentIfDirty(String roomName) {
         if (dirtyDocuments.remove(roomName)) {
@@ -677,13 +537,6 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             } catch (Exception e) {
                 logger.error("문서 저장 실패 - room: {}, 오류: {}", roomName, e.getMessage());
             }
-        }
-    }
-    
-    private void saveAllDirtyDocuments() {
-        Set<String> rooms = new HashSet<>(dirtyDocuments);
-        for (String roomName : rooms) {
-            saveDocumentIfDirty(roomName);
         }
     }
     
