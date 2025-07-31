@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Tooltip, Avatar, AvatarGroup } from '@mui/material';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -63,7 +63,14 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   const [isLocalSynced, setLocalSynced] = useState(false);
   const [isRemoteSynced, setRemoteSynced] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('connecting');
-  const [connectedUsers, setConnectedUsers] = useState<Array<{id: string, name: string, color: string}>>([]);
+  const [connectedUsers, setConnectedUsers] = useState<Array<{
+    id: string, 
+    name: string, 
+    color: string,
+    loginId?: string,
+    staffId?: string,
+    clientId?: number
+  }>>([]);
   const [initialSyncCompleted, setInitialSyncCompleted] = useState(false);
   const [skipBroadcast, setSkipBroadcast] = useState(false); // 브로드캐스트 스킵 플래그
   const [canUndo, setCanUndo] = useState(false); // UndoManager 상태
@@ -193,6 +200,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       staffId: currentUser.staffId,
       name: currentUser.userName,
       color: userColor,
+      id: loginId || currentUser.staffId // 고유 ID 추가
     });
     
     // Provider awareness 설정
@@ -476,13 +484,25 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         // Awareness 변경 감지
         remoteProviderRef.current.awareness.on('change', () => {
           const states = Array.from(remoteProviderRef.current?.awareness.getStates() || []);
+          console.log('[Awareness] 상태 변경 감지:', states);
+          
           const users = states
-            .filter((state: any) => state.user)
-            .map((state: any) => ({
-              id: state.user.loginId || state.user.staffId,
-              name: state.user.name,
-              color: state.user.color
-            }));
+            .map(([clientId, state]) => {
+              if (state.user) {
+                return {
+                  clientId,
+                  id: state.user.id || state.user.loginId || state.user.staffId,
+                  name: state.user.name,
+                  color: state.user.color,
+                  loginId: state.user.loginId,
+                  staffId: state.user.staffId
+                };
+              }
+              return null;
+            })
+            .filter((user): user is NonNullable<typeof user> => user !== null);
+          
+          console.log('[Awareness] 접속 사용자 목록:', users);
           setConnectedUsers(users);
           // 접속 사용자 업데이트
         });
@@ -806,39 +826,71 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
 
   // 사용자 커서 표시
   const renderConnectedUsers = () => {
-    if (connectedUsers.length <= 1) return null;
+    const otherUsers = connectedUsers.filter(user => user.id !== (currentUser.loginId || currentUser.staffId));
     
     return (
       <Box sx={{ 
-        position: 'absolute', 
-        top: 8, 
-        left: 8, 
         display: 'flex', 
-        gap: 0.5,
-        zIndex: 10
+        alignItems: 'center',
+        gap: 1,
+        padding: '8px 16px',
+        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid #e0e0e0',
+        minHeight: '40px'
       }}>
-        {connectedUsers.filter(user => user.id !== (currentUser.loginId || currentUser.staffId)).map(user => (
-          <Box
-            key={user.id}
-            sx={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              backgroundColor: user.color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              color: 'white',
-              fontWeight: 'bold',
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-            }}
-            title={user.name}
-          >
-            {user.name.charAt(0).toUpperCase()}
-          </Box>
-        ))}
+        {otherUsers.length === 0 ? (
+          <Typography variant="body2" sx={{ color: '#999' }}>
+            현재 혼자 편집 중입니다
+          </Typography>
+        ) : (
+          <>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#666', mr: 1 }}>
+              실시간 편집 중:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
+              {otherUsers.map(user => (
+                <Tooltip key={user.id} title={`${user.name} (${user.loginId || user.staffId})`}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      backgroundColor: 'white',
+                      border: `2px solid ${user.color}`,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      cursor: 'default'
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        backgroundColor: user.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {user.name.charAt(0).toUpperCase()}
+                    </Box>
+                    <Typography variant="body2" sx={{ fontSize: '13px' }}>
+                      {user.name}
+                    </Typography>
+                  </Box>
+                </Tooltip>
+              ))}
+            </Box>
+            <Typography variant="caption" sx={{ ml: 'auto', color: '#666', fontWeight: 'bold' }}>
+              총 {otherUsers.length}명 편집 중
+            </Typography>
+          </>
+        )}
       </Box>
     );
   };
@@ -868,6 +920,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
 
   return (
     <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {renderConnectedUsers()}
       {editor && (
         <EditorToolbar 
           editor={editor}
@@ -875,7 +928,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         />
       )}
       {getConnectionIndicator()}
-      {renderConnectedUsers()}
       <Box
         className="tiptap-editor"
         sx={{

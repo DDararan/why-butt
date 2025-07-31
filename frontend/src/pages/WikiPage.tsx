@@ -123,7 +123,7 @@ const WikiPage: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'e' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      if ((event.key === 'e' || event.key === 'E') && !event.ctrlKey && !event.altKey && !event.metaKey) {
         event.preventDefault();
         handleEdit();
       }
