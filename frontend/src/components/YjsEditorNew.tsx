@@ -162,8 +162,19 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     
     // WebSocket Provider 초기화
     
-    // WebSocket URL에 room 이름 포함하지 않음 (y-websocket이 자동 추가)
-    const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8181/ws/yjs';
+    // 현재 접속한 URL을 기반으로 동적으로 WebSocket URL 생성
+    const getWebSocketUrl = () => {
+      
+      // 현재 페이지의 호스트 정보 가져오기
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname;
+      const port = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+       
+      // 현재 호스트 사용
+      return `${protocol}//${host}:8181/ws/yjs`;
+    };
+    
+    const wsUrl = getWebSocketUrl();
     
     // loginId 우선순위: props > localStorage > staffId
     let loginId = currentUser.loginId;

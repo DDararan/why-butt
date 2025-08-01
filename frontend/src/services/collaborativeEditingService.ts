@@ -43,7 +43,18 @@ class CollaborativeEditingService {
     }
 
     // 주의: 이 서비스는 현재 사용되지 않음. YjsEditorNew에서 Yjs WebSocket을 사용함
-    const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8181/ws/yjs/collaborative';
+    const getWebSocketUrl = () => {
+      
+      // 현재 페이지의 호스트 정보 가져오기
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname;
+      const port = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+      
+      // 현재 호스트 사용
+      return `${protocol}//${host}:8181/ws/yjs/collaborative`;
+    };
+    
+    const wsUrl = getWebSocketUrl();
     
     try {
       this.websocket = new WebSocket(wsUrl);
