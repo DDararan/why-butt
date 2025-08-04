@@ -22,11 +22,55 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
-
+import TurndownService from 'turndown';
+import { marked } from 'marked';
 import EditorToolbar from './EditorToolbar';
 import './Editor.css';
 import './TipTapEditor.css';
 import { wikiService } from '../services/wikiService';
+
+// marked 확장 설정
+marked.use({
+  extensions: [
+    {
+      name: 'underline',
+      level: 'inline',
+      start(src) { return src.indexOf('++'); },
+      tokenizer(src) {
+        const match = src.match(/^\+\+([^+]+)\+\+/);
+        if (match) {
+          return {
+            type: 'underline',
+            raw: match[0],
+            text: match[1]
+          };
+        }
+      },
+      renderer(token) {
+        return `<u>${token.text}</u>`;
+      }
+    },
+    {
+      name: 'highlight',
+      level: 'inline',
+      start(src) { return src.indexOf('=='); },
+      tokenizer(src) {
+        const match = src.match(/^==([^=]+)==/);
+        if (match) {
+          return {
+            type: 'highlight',
+            raw: match[0],
+            text: match[1]
+          };
+        }
+      },
+      renderer(token) {
+        return `<mark>${token.text}</mark>`;
+      }
+    }
+  ]
+});
+
 
 interface YjsEditorNewProps {
   pageId: number;
@@ -59,6 +103,64 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   defaultValue = '',
   onChange
 }, ref) => {
+  // Turndown 서비스 인스턴스 생성
+  const turndownService = useMemo(() => {
+    const service = new TurndownService({
+      headingStyle: 'atx', // # 스타일 헤더 사용
+      codeBlockStyle: 'fenced', // ``` 스타일 코드 블록 사용
+      bulletListMarker: '-', // 리스트 마커
+    });
+    
+    // 취소선 규칙 추가 (s, del, strike 태그)
+    service.addRule('strikethrough', {
+      filter: ['s', 'del', 'strike'],
+      replacement: function (content) {
+        console.log('[Turndown] 취소선 변환:', content);
+        return '~~' + content + '~~';
+      }
+    });
+    
+    // 언더라인 규칙 추가 (u 태그)
+    service.addRule('underline', {
+      filter: ['u'],
+      replacement: function (content) {
+        console.log('[Turndown] 언더라인 변환:', content);
+        // 확장 마크다운 문법 사용: ++텍스트++
+        return '++' + content + '++';
+      }
+    });
+    
+    // 강조(em) 규칙 재정의 - 이탤릭
+    service.addRule('emphasis', {
+      filter: ['em', 'i'],
+      replacement: function (content) {
+        console.log('[Turndown] 이탤릭 변환:', content);
+        return '*' + content + '*';
+      }
+    });
+    
+    // 강조(strong) 규칙 재정의 - 볼드
+    service.addRule('strong', {
+      filter: ['strong', 'b'],
+      replacement: function (content) {
+        console.log('[Turndown] 볼드 변환:', content);
+        return '**' + content + '**';
+      }
+    });
+    
+    // 하이라이트(mark) 규칙 추가
+    service.addRule('highlight', {
+      filter: ['mark'],
+      replacement: function (content) {
+        console.log('[Turndown] 하이라이트 변환:', content);
+        // 확장 마크다운 문법 사용: ==텍스트==
+        return '==' + content + '==';
+      }
+    });
+    
+    return service;
+  }, []);
+  
   const [editorReady, setEditorReady] = useState(false);
   const [isLocalSynced, setLocalSynced] = useState(false);
   const [isRemoteSynced, setRemoteSynced] = useState(false);
@@ -338,8 +440,36 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       if (!isToolbarActionRef.current && !isComposingRef.current) {
         if (onChangeRef.current && transaction.docChanged) {
           console.log('[키입력2] onChange 호출');
-          onChangeRef.current(editor.getHTML());
+          const html = editor.getHTML();
+          console.log('[onChange] HTML 내용:', html.substring(0, 200) + '...');
+          
+          // 스타일 태그 확인
+          if (html.includes('<s>') || html.includes('<del>') || html.includes('<strike>')) {
+            console.log('[onChange] 취소선 태그 발견!');
+          }
+          if (html.includes('<u>')) {
+            console.log('[onChange] 언더라인 태그 발견!');
+          }
+          if (html.includes('<strong>') || html.includes('<b>')) {
+            console.log('[onChange] 볼드 태그 발견!');
+          }
+          if (html.includes('<em>') || html.includes('<i>')) {
+            console.log('[onChange] 이탤릭 태그 발견!');
+          }
+          if (html.includes('<mark')) {
+            console.log('[onChange] 하이라이트 태그 발견!');
+          }
+          
+          const markdown = turndownService.turndown(html);
+          console.log('[onChange] 변환된 마크다운:', markdown.substring(0, 100) + '...');
+          onChangeRef.current(markdown);
         }
+      } else {
+        console.log('[키입력2-스킵] onChange 호출 스킵', {
+          isToolbarAction: isToolbarActionRef.current,
+          isComposing: isComposingRef.current,
+          docChanged: transaction.docChanged
+        });
       }
     },
     // onTransaction, onSelectionUpdate 제거
@@ -360,8 +490,12 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     if (defaultValue && editor && (fragmentLength === 0 || isEmptyContent)) {
       console.log('[페이지수정_초기화] Y.js 문서가 비어있음 - DB 내용으로 초기화');
       try {
+        // 마크다운을 HTML로 변환
+        const htmlContent = marked(defaultValue) as string;
+        console.log('[페이지수정_초기화] 마크다운 -> HTML 변환:', defaultValue.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+        
         // 에디터 내용 설정
-        editor.commands.setContent(defaultValue);
+        editor.commands.setContent(htmlContent);
         console.log('[페이지수정_초기화] DB 내용 설정 완료');
       } catch (e) {
         console.error('[페이지수정_초기화] 초기 내용 설정 실패:', e);
@@ -628,7 +762,19 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
             
             console.log('[키입력4] Y.js 변경을 onChange로 전달');
             const htmlContent = editor.getHTML();
-            onChangeRef.current(htmlContent);
+            console.log('[Y.js onChange] HTML 내용:', htmlContent.substring(0, 200) + '...');
+            
+            // 취소선/언더라인 태그 확인
+            if (htmlContent.includes('<s>') || htmlContent.includes('<del>') || htmlContent.includes('<strike>')) {
+              console.log('[Y.js onChange] 취소선 태그 발견!');
+            }
+            if (htmlContent.includes('<u>')) {
+              console.log('[Y.js onChange] 언더라인 태그 발견!');
+            }
+            
+            const markdownContent = turndownService.turndown(htmlContent);
+            console.log('[Y.js onChange] 변환된 마크다운:', markdownContent.substring(0, 100) + '...');
+            onChangeRef.current(markdownContent);
             // 백엔드로 동기화
             // console.log('[키입력5] 백엔드 동기화 시작 (2초 디바운스)');
             // syncContentToBackend(htmlContent);
@@ -725,11 +871,34 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   // IME 조합 이벤트 감지
   useEffect(() => {
     const handleCompositionStart = () => {
+      console.log('[IME] 한글 조합 시작 - isComposingRef.current = true');
       isComposingRef.current = true;
     };
     
     const handleCompositionEnd = () => {
+      console.log('[IME] 한글 조합 종료 - isComposingRef.current = false');
       isComposingRef.current = false;
+      
+      // 조합 종료 후 onChange 강제 호출
+      if (onChangeRef.current && editor && !editor.isDestroyed) {
+        setTimeout(() => {
+          console.log('[IME] 조합 종료 후 onChange 강제 호출');
+          const html = editor.getHTML();
+          console.log('[IME] HTML 내용:', html.substring(0, 200) + '...');
+          
+          // 취소선/언더라인 태그 확인
+          if (html.includes('<s>') || html.includes('<del>') || html.includes('<strike>')) {
+            console.log('[IME] 취소선 태그 발견!');
+          }
+          if (html.includes('<u>')) {
+            console.log('[IME] 언더라인 태그 발견!');
+          }
+          
+          const markdown = turndownService.turndown(html);
+          console.log('[IME] 변환된 마크다운:', markdown.substring(0, 100) + '...');
+          onChangeRef.current!(markdown);
+        }, 100);
+      }
     };
     
     const editorElement = editor?.view.dom;
@@ -742,7 +911,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         editorElement.removeEventListener('compositionend', handleCompositionEnd);
       };
     }
-  }, [editor]);
+  }, [editor, turndownService]);
 
   // 모든 변경사항 취소 (사용자별 UndoManager 사용)
   const handleUndoAll = useCallback(() => {

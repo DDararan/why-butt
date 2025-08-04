@@ -5,6 +5,130 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import '../styles/markdown.css';
 
+// 커스텀 remark 플러그인: ++텍스트++ → <u>텍스트</u>
+function remarkUnderline() {
+  return (tree: any) => {
+    const visit = (node: any, index: number | null, parent: any) => {
+      if (node.type === 'text') {
+        const regex = /\+\+([^+]+)\+\+/g;
+        const matches = [...node.value.matchAll(regex)];
+        
+        if (matches.length > 0) {
+          const newNodes: any[] = [];
+          let lastIndex = 0;
+          
+          matches.forEach(match => {
+            const startIndex = match.index!;
+            const endIndex = startIndex + match[0].length;
+            
+            // 매치 이전 텍스트
+            if (startIndex > lastIndex) {
+              newNodes.push({
+                type: 'text',
+                value: node.value.slice(lastIndex, startIndex)
+              });
+            }
+            
+            // 언더라인 HTML
+            newNodes.push({
+              type: 'html',
+              value: `<u>${match[1]}</u>`
+            });
+            
+            lastIndex = endIndex;
+          });
+          
+          // 마지막 텍스트
+          if (lastIndex < node.value.length) {
+            newNodes.push({
+              type: 'text',
+              value: node.value.slice(lastIndex)
+            });
+          }
+          
+          if (parent && typeof index === 'number') {
+            parent.children.splice(index, 1, ...newNodes);
+            return index + newNodes.length;
+          }
+        }
+      }
+      
+      if (node.children) {
+        for (let i = 0; i < node.children.length; i++) {
+          const result = visit(node.children[i], i, node);
+          if (typeof result === 'number') {
+            i = result - 1;
+          }
+        }
+      }
+    };
+    
+    visit(tree, null, null);
+  };
+}
+
+// 커스텀 remark 플러그인: ==텍스트== → <mark>텍스트</mark>
+function remarkHighlight() {
+  return (tree: any) => {
+    const visit = (node: any, index: number | null, parent: any) => {
+      if (node.type === 'text') {
+        const regex = /==([^=]+)==/g;
+        const matches = [...node.value.matchAll(regex)];
+        
+        if (matches.length > 0) {
+          const newNodes: any[] = [];
+          let lastIndex = 0;
+          
+          matches.forEach(match => {
+            const startIndex = match.index!;
+            const endIndex = startIndex + match[0].length;
+            
+            // 매치 이전 텍스트
+            if (startIndex > lastIndex) {
+              newNodes.push({
+                type: 'text',
+                value: node.value.slice(lastIndex, startIndex)
+              });
+            }
+            
+            // 하이라이트 HTML
+            newNodes.push({
+              type: 'html',
+              value: `<mark>${match[1]}</mark>`
+            });
+            
+            lastIndex = endIndex;
+          });
+          
+          // 마지막 텍스트
+          if (lastIndex < node.value.length) {
+            newNodes.push({
+              type: 'text',
+              value: node.value.slice(lastIndex)
+            });
+          }
+          
+          if (parent && typeof index === 'number') {
+            parent.children.splice(index, 1, ...newNodes);
+            return index + newNodes.length;
+          }
+        }
+      }
+      
+      if (node.children) {
+        for (let i = 0; i < node.children.length; i++) {
+          const result = visit(node.children[i], i, node);
+          if (typeof result === 'number') {
+            i = result - 1;
+          }
+        }
+      }
+    };
+    
+    visit(tree, null, null);
+  };
+}
+
 interface ReadOnlyViewerProps {
   content: string;
 }
@@ -77,6 +201,17 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
             marginBottom: '1rem',
             lineHeight: '1.6',
           },
+          '& u': {
+            textDecoration: 'underline',
+          },
+          '& s, & del, & strike': {
+            textDecoration: 'line-through',
+          },
+          '& mark': {
+            backgroundColor: '#ffeb3b',
+            padding: '0.1em 0.2em',
+            borderRadius: '2px',
+          },
         }}
         dangerouslySetInnerHTML={{ __html: content }}
       />
@@ -139,10 +274,21 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
           marginBottom: '1rem',
           lineHeight: '1.6',
         },
+        '& u': {
+          textDecoration: 'underline',
+        },
+        '& s, & del, & strike': {
+          textDecoration: 'line-through',
+        },
+        '& mark': {
+          backgroundColor: '#ffeb3b',
+          padding: '0.1em 0.2em',
+          borderRadius: '2px',
+        },
       }}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkUnderline, remarkHighlight]}
         rehypePlugins={[rehypeRaw]}
       >
         {content}

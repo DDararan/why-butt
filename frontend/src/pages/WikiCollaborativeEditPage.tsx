@@ -114,6 +114,11 @@ const WikiCollaborativeEditPage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    console.log('[저장] 저장 버튼 클릭');
+    console.log('[저장] 현재 content:', content);
+    console.log('[저장] content 길이:', content.length);
+    console.log('[저장] content 첫 100자:', content.substring(0, 100));
+    
     if (!title.trim()) {
       setError('제목을 입력해주세요.');
       return;
@@ -129,6 +134,8 @@ const WikiCollaborativeEditPage: React.FC = () => {
         pageType,
         parentId: parentId === null ? undefined : parentId,
       };
+      
+      console.log('[저장] 전송할 pageData:', pageData);
 
       let savedPage: WikiPage;
       
@@ -157,6 +164,9 @@ const WikiCollaborativeEditPage: React.FC = () => {
   };
 
   const handleContentChange = (value: string) => {
+    console.log('[handleContentChange] 호출됨');
+    console.log('[handleContentChange] 받은 value:', value.substring(0, 100) + '...');
+    console.log('[handleContentChange] value 길이:', value.length);
     setContent(value);
   };
 
