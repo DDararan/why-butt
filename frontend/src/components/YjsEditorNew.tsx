@@ -158,6 +158,17 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       }
     });
     
+    // 이미지 규칙 추가
+    service.addRule('image', {
+      filter: 'img',
+      replacement: function (content, node: any) {
+        const alt = node.alt || '이미지';
+        const src = node.getAttribute('src') || '';
+        console.log('[Turndown] 이미지 변환:', alt, src);
+        return `![${alt}](${src})`;
+      }
+    });
+    
     return service;
   }, []);
   
@@ -490,9 +501,35 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     if (defaultValue && editor && (fragmentLength === 0 || isEmptyContent)) {
       console.log('[페이지수정_초기화] Y.js 문서가 비어있음 - DB 내용으로 초기화');
       try {
-        // 마크다운을 HTML로 변환
-        const htmlContent = marked(defaultValue) as string;
-        console.log('[페이지수정_초기화] 마크다운 -> HTML 변환:', defaultValue.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+                  // 마크다운을 HTML로 변환
+          marked.setOptions({
+            breaks: true,
+            gfm: true,
+          });
+          
+          // 이미지 마크다운 패턴 확인
+          const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+          const imageMatches = defaultValue.match(imagePattern);
+          if (imageMatches) {
+            console.log('[페이지수정_초기화] 이미지 마크다운 발견:', imageMatches);
+            imageMatches.forEach(match => {
+              console.log('[페이지수정_초기화] 이미지 URL 길이:', match.length);
+              if (match.includes('data:image')) {
+                console.log('[페이지수정_초기화] base64 이미지 발견');
+              }
+            });
+          }
+          
+          const htmlContent = marked(defaultValue) as string;
+          console.log('[페이지수정_초기화] 마크다운 -> HTML 변환:', defaultValue.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+          console.log('[페이지수정_초기화] 전체 HTML 내용 길이:', htmlContent.length);
+          
+          // HTML에 img 태그가 있는지 확인
+          const imgPattern = /<img[^>]+>/g;
+          const imgMatches = htmlContent.match(imgPattern);
+          if (imgMatches) {
+            console.log('[페이지수정_초기화] HTML img 태그 발견:', imgMatches.length, '개');
+          }
         
         // 에디터 내용 설정
         editor.commands.setContent(htmlContent);

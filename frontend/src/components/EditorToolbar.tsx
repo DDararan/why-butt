@@ -30,13 +30,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, handleToolbarClic
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
-  const addImage = () => {
-    const url = window.prompt('이미지 URL을 입력하세요:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  };
-
   return (
     <Box sx={{ 
       display: 'flex', 
