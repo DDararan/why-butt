@@ -158,14 +158,23 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       }
     });
     
-    // 이미지 규칙 추가
+    // 이미지 규칙 추가 - img 태그를 그대로 유지
     service.addRule('image', {
       filter: 'img',
       replacement: function (content, node: any) {
         const alt = node.alt || '이미지';
         const src = node.getAttribute('src') || '';
-        console.log('[Turndown] 이미지 변환:', alt, src);
-        return `![${alt}](${src})`;
+        const className = node.className || '';
+        console.log('[Turndown] 이미지 변환 - HTML 태그 유지');
+        console.log('[Turndown] src 길이:', src.length);
+        console.log('[Turndown] className:', className);
+        
+        // img 태그를 그대로 유지
+        if (className) {
+          return `<img class="${className}" src="${src}" alt="${alt}" />`;
+        } else {
+          return `<img src="${src}" alt="${alt}" />`;
+        }
       }
     });
     

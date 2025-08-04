@@ -134,53 +134,11 @@ interface ReadOnlyViewerProps {
 }
 
 const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
-  // HTML 태그가 포함되어 있거나 base64 이미지가 있는지 확인
-  const hasHtmlTags = /<[^>]*>/g.test(content);
-  const hasBase64Image = content.includes('data:image');
-  const isHtml = hasHtmlTags || hasBase64Image;
+  // HTML 태그가 포함되어 있는지 확인
+  const isHtml = /<[^>]*>/g.test(content);
   
-  // 디버깅: 컨텐츠 확인
-  console.log('[ReadOnlyViewer] 컨텐츠 타입:', isHtml ? 'HTML' : 'Markdown');
-  console.log('[ReadOnlyViewer] HTML 태그 포함:', hasHtmlTags);
-  console.log('[ReadOnlyViewer] Base64 이미지 포함:', hasBase64Image);
-  console.log('[ReadOnlyViewer] 컨텐츠 내용:', content.substring(0, 200));
-  
-  // 이미지 마크다운 패턴 확인
-  const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const imageMatches = content.match(imagePattern);
-  if (imageMatches) {
-    console.log('[ReadOnlyViewer] 이미지 마크다운 발견:', imageMatches.length, '개');
-    imageMatches.forEach((match, index) => {
-      console.log(`[ReadOnlyViewer] 이미지 ${index + 1} 길이:`, match.length);
-      if (match.includes('data:image')) {
-        console.log(`[ReadOnlyViewer] 이미지 ${index + 1}은 base64 이미지`);
-      }
-    });
-  }
-  
-  // HTML인 경우 또는 base64 이미지가 있는 경우 직접 렌더링
+  // HTML인 경우 직접 렌더링, 마크다운인 경우 ReactMarkdown 사용
   if (isHtml) {
-    // base64 이미지가 있는 마크다운인 경우 HTML로 변환
-    let htmlContent = content;
-    if (hasBase64Image && !hasHtmlTags) {
-      console.log('[ReadOnlyViewer] Base64 이미지가 있는 마크다운을 HTML로 변환');
-      // 마크다운 이미지를 HTML img 태그로 변환
-      htmlContent = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        console.log('[ReadOnlyViewer] 이미지 변환:', { 
-          alt, 
-          srcLength: src.length,
-          isBase64: src.startsWith('data:image')
-        });
-        return `<img src="${src}" alt="${alt || '이미지'}" style="max-width: 100%; height: auto; display: block; margin: 1rem 0;" />`;
-      });
-      
-      // 기본적인 마크다운 변환 추가
-      // 줄바꿈을 <br>로 변환
-      htmlContent = htmlContent.replace(/\n/g, '<br>');
-      
-      // 단락을 <p>로 감싸기
-      htmlContent = `<p>${htmlContent}</p>`;
-    }
     
     return (
       <Box
@@ -256,24 +214,11 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
             borderRadius: '2px',
           },
         }}
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
+        dangerouslySetInnerHTML={{ __html: content }}
       />
     );
   }
 
-  // base64 이미지를 처리하기 위해 content를 전처리
-  const preprocessContent = (content: string) => {
-    // 이미지 마크다운을 HTML img 태그로 변환
-    const processedContent = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-      // base64 이미지 또는 일반 URL 모두 처리
-      console.log('[ReadOnlyViewer] 이미지 변환:', { alt, srcLength: src.length });
-      return `<img src="${src}" alt="${alt || '이미지'}" style="max-width: 100%; height: auto; display: block; margin: 1rem 0;" />`;
-    });
-    
-    return processedContent;
-  };
-
-  const processedContent = preprocessContent(content);
 
   return (
     <Box
@@ -349,23 +294,37 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
         rehypePlugins={[rehypeRaw]}
         components={{
           img: ({node, ...props}) => {
-            console.log('[ReadOnlyViewer] 이미지 렌더링:', props.src?.substring(0, 100), props.alt);
+            // base64 이미지 또는 일반 이미지 모두 처리
+            const className = props.className || '';
+            console.log('[ReadOnlyViewer] 이미지 렌더링:', {
+              className,
+              srcLength: props.src?.length,
+              alt: props.alt
+            });
+            
             return (
               <img 
-                {...props} 
+                className={className}
+                src={props.src}
+                alt={props.alt || '이미지'}
                 style={{ 
                   maxWidth: '100%', 
                   height: 'auto',
                   display: 'block',
                   margin: '1rem 0'
                 }} 
-                alt={props.alt || '이미지'}
+                onError={(e) => {
+                  console.error('[ReadOnlyViewer] 이미지 로드 실패:', props.src?.substring(0, 100));
+                }}
+                onLoad={(e) => {
+                  console.log('[ReadOnlyViewer] 이미지 로드 성공');
+                }}
               />
             );
           }
         }}
       >
-        {processedContent}
+        {content}
       </ReactMarkdown>
     </Box>
   );
