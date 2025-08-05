@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -93,7 +94,13 @@ public class WikiPageService {
     public WikiPageDto.Response.Detail createPage(WikiPageDto.Request.Create request, String currentUserStaffId, String currentUserStaffName) {
         WikiPage page = new WikiPage();
         page.setTitle(request.getTitle());
-        page.setContent(request.getContent());
+        
+        // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
+        // 단, img 태그는 제외
+        String escapedContent = escapeHtmlExceptImages(request.getContent());
+        log.debug("Content escaping - Original length: {}, Escaped length: {}", 
+                request.getContent().length(), escapedContent.length());
+        page.setContent(escapedContent);
         
         // 작성자 정보 설정
         page.setCreationStaffId(currentUserStaffId);
@@ -144,7 +151,12 @@ public class WikiPageService {
             page.setTitle(request.getTitle().trim());
         }
         
-        page.setContent(request.getContent());
+        // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
+        // 단, img 태그는 제외
+        String escapedContent = escapeHtmlExceptImages(request.getContent());
+        log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
+                request.getContent().length(), escapedContent.length());
+        page.setContent(escapedContent);
         
         // 페이지 타입 업데이트 로직: 최상위 페이지만 직접 타입 변경 가능
         if (page.getParent() == null && request.getPageType() != null && !request.getPageType().trim().isEmpty()) {
@@ -199,7 +211,12 @@ public class WikiPageService {
             page.setTitle(request.getTitle().trim());
         }
         
-        page.setContent(request.getContent());
+        // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
+        // 단, img 태그는 제외
+        String escapedContent = escapeHtmlExceptImages(request.getContent());
+        log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
+                request.getContent().length(), escapedContent.length());
+        page.setContent(escapedContent);
         
         // 페이지 타입 업데이트 로직: 최상위 페이지만 직접 타입 변경 가능
         if (page.getParent() == null && request.getPageType() != null && !request.getPageType().trim().isEmpty()) {
@@ -345,6 +362,47 @@ public class WikiPageService {
         System.out.println("페이지 순서 변경 완료");
     }
 
+    /**
+     * HTML 특수문자를 이스케이프하되, img 태그는 제외하는 메서드
+     * @param content 원본 컨텐츠
+     * @return 이스케이프된 컨텐츠
+     */
+    private String escapeHtmlExceptImages(String content) {
+        if (content == null) {
+            return null;
+        }
+        
+        // img 태그를 임시 플레이스홀더로 치환
+        String placeholder = "___IMG_PLACEHOLDER_";
+        java.util.List<String> imgTags = new java.util.ArrayList<>();
+        java.util.regex.Pattern imgPattern = java.util.regex.Pattern.compile("<img[^>]*>", java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = imgPattern.matcher(content);
+        
+        StringBuffer sb = new StringBuffer();
+        int index = 0;
+        while (matcher.find()) {
+            String imgTag = matcher.group();
+            imgTags.add(imgTag);
+            matcher.appendReplacement(sb, placeholder + index + "___");
+            index++;
+        }
+        matcher.appendTail(sb);
+        String contentWithPlaceholders = sb.toString();
+        
+        // HTML 이스케이프 처리
+        String escapedContent = HtmlUtils.htmlEscape(contentWithPlaceholders);
+        
+        // 플레이스홀더를 원래 img 태그로 복원
+        for (int i = 0; i < imgTags.size(); i++) {
+            String placeholderToReplace = placeholder + i + "___";
+            escapedContent = escapedContent.replace(placeholderToReplace, imgTags.get(i));
+        }
+        
+        log.debug("Image tags preserved: {}", imgTags.size());
+        
+        return escapedContent;
+    }
+    
     /**
      * 페이지의 부모를 변경합니다.
      * 부모 변경 시 depth와 path도 함께 업데이트됩니다.

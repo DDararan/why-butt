@@ -111,6 +111,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       bulletListMarker: '-', // 리스트 마커
     });
     
+    
     // 취소선 규칙 추가 (s, del, strike 태그)
     service.addRule('strikethrough', {
       filter: ['s', 'del', 'strike'],
