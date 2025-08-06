@@ -5,7 +5,6 @@ import { orange } from '@mui/material/colors';
 import Layout from './components/Layout';
 import EditPage from './pages/EditPage';
 import WikiPage from './pages/WikiPage';
-import WikiCollaborativeEditPage from './pages/WikiCollaborativeEditPage';
 import LoginPage from './components/LoginPage';
 import { PageTreeProvider } from './contexts/PageTreeContext';
 import PageEditor from './components/PageEditor';

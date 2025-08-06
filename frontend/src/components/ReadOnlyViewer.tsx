@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import '../styles/markdown.css';
+import { marked } from 'marked';
 
 // 커스텀 remark 플러그인: ++텍스트++ → <u>텍스트</u>
 function remarkUnderline() {
@@ -134,13 +135,46 @@ interface ReadOnlyViewerProps {
 }
 
 const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
-  // HTML 태그가 포함되어 있는지 확인
-  const isHtml = /<[^>]*>/g.test(content);
+  console.log('[ReadOnlyViewer_시작] 초기 컨텐츠:', content?.substring(0, 100));
   
-  // HTML인 경우 직접 렌더링, 마크다운인 경우 ReactMarkdown 사용
-  if (isHtml) {
+  // 무조건 마크다운으로 처리하고 HTML로 변환 (YjsEditorNew와 정확히 동일한 방식)
+  let processedContent = content || '';
+  
+  try {
+    // marked 옵션 설정 (YjsEditorNew와 동일)
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+    });
     
-    return (
+    // 이미지 마크다운 패턴 확인 (디버깅용)
+    const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const imageMatches = processedContent.match(imagePattern);
+    if (imageMatches) {
+      console.log('[ReadOnlyViewer_이미지] 마크다운 이미지:', imageMatches.length, '개');
+      imageMatches.forEach((match, index) => {
+        console.log(`[ReadOnlyViewer_이미지] ${index + 1} URL 길이:`, match.length);
+        if (match.includes('data:image')) {
+          console.log(`[ReadOnlyViewer_이미지] base64 발견`);
+        }
+      });
+    }
+    
+    // YjsEditorNew와 정확히 동일한 방식으로 변환
+    // marked 사용 시 타입 에러 방지를 위해 as string 처리
+    const htmlContent = marked(processedContent) as string;
+    console.log('[ReadOnlyViewer_변환] 마크다운 -> HTML:', processedContent.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+    console.log('[ReadOnlyViewer_변환] HTML 길이:', htmlContent.length);
+    
+    // 변환된 HTML 콘텐츠 사용
+    processedContent = htmlContent;
+  } catch (error) {
+    console.error('[ReadOnlyViewer_오류] 마크다운 변환 실패:', error);
+  }
+  
+  // 항상 HTML로 직접 렌더링
+  // YjsEditorNew와 동일한 방식으로 처리
+  return (
       <Box
         className="markdown-preview html-content"
         sx={{
@@ -214,119 +248,8 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
             borderRadius: '2px',
           },
         }}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
       />
-    );
-  }
-
-
-  return (
-    <Box
-      className="markdown-preview"
-      sx={{
-        '& img': {
-          maxWidth: '100%',
-          height: 'auto',
-        },
-        '& table': {
-          width: '100%',
-          borderCollapse: 'collapse',
-          marginBottom: '1rem',
-        },
-        '& th, & td': {
-          border: '1px solid #ddd',
-          padding: '8px',
-        },
-        '& th': {
-          backgroundColor: '#f5f5f5',
-        },
-        '& pre': {
-          backgroundColor: '#f5f5f5',
-          padding: '1rem',
-          borderRadius: '4px',
-          overflow: 'auto',
-        },
-        '& code': {
-          backgroundColor: '#f5f5f5',
-          padding: '0.2rem 0.4rem',
-          borderRadius: '3px',
-          fontSize: '0.9em',
-        },
-        '& pre code': {
-          backgroundColor: 'transparent',
-          padding: 0,
-        },
-        '& blockquote': {
-          borderLeft: '4px solid #ddd',
-          marginLeft: 0,
-          paddingLeft: '1rem',
-          color: '#666',
-        },
-        '& ul, & ol': {
-          paddingLeft: '2rem',
-        },
-        '& li': {
-          marginBottom: '0.5rem',
-        },
-        '& h1, & h2, & h3, & h4, & h5, & h6': {
-          marginTop: '1.5rem',
-          marginBottom: '1rem',
-        },
-        '& p': {
-          marginBottom: '1rem',
-          lineHeight: '1.6',
-        },
-        '& u': {
-          textDecoration: 'underline',
-        },
-        '& s, & del, & strike': {
-          textDecoration: 'line-through',
-        },
-        '& mark': {
-          backgroundColor: '#ffeb3b',
-          padding: '0.1em 0.2em',
-          borderRadius: '2px',
-        },
-      }}
-    >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkUnderline, remarkHighlight]}
-        rehypePlugins={[rehypeRaw]}
-        components={{
-          img: ({node, ...props}) => {
-            // base64 이미지 또는 일반 이미지 모두 처리
-            const className = props.className || '';
-            console.log('[ReadOnlyViewer] 이미지 렌더링:', {
-              className,
-              srcLength: props.src?.length,
-              alt: props.alt
-            });
-            
-            return (
-              <img 
-                className={className}
-                src={props.src}
-                alt={props.alt || '이미지'}
-                style={{ 
-                  maxWidth: '100%', 
-                  height: 'auto',
-                  display: 'block',
-                  margin: '1rem 0'
-                }} 
-                onError={(e) => {
-                  console.error('[ReadOnlyViewer] 이미지 로드 실패:', props.src?.substring(0, 100));
-                }}
-                onLoad={(e) => {
-                  console.log('[ReadOnlyViewer] 이미지 로드 성공');
-                }}
-              />
-            );
-          }
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </Box>
   );
 };
 
