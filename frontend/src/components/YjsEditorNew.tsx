@@ -179,6 +179,26 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       }
     });
     
+    // 테이블 관련 태그들을 HTML로 유지하는 규칙 추가
+    // table 태그 전체를 HTML로 유지
+    service.addRule('table', {
+      filter: 'table',
+      replacement: function (content, node: any) {
+        console.log('[Turndown] 테이블 변환 - HTML 태그 유지');
+        // outerHTML을 사용하여 전체 테이블 HTML을 그대로 유지
+        return '\n' + node.outerHTML + '\n';
+      }
+    });
+    
+    // 테이블 내부의 개별 요소들도 처리 방지
+    service.addRule('tableElements', {
+      filter: ['thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'colgroup', 'col'],
+      replacement: function (content, node: any) {
+        // 테이블 내부 요소들은 table 규칙에서 이미 처리되므로 건너뛰기
+        return content;
+      }
+    });
+    
     return service;
   }, []);
   

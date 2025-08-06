@@ -137,39 +137,53 @@ interface ReadOnlyViewerProps {
 const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
   console.log('[ReadOnlyViewer_시작] 초기 컨텐츠:', content?.substring(0, 100));
   
-  // 무조건 마크다운으로 처리하고 HTML로 변환 (YjsEditorNew와 정확히 동일한 방식)
+  // HTML인지 마크다운인지 판단하여 처리
   let processedContent = content || '';
   
-  try {
-    // marked 옵션 설정 (YjsEditorNew와 동일)
-    marked.setOptions({
-      breaks: true,
-      gfm: true,
-    });
+  // HTML 태그 패턴 확인 (table, p, div, h1-h6 등의 일반적인 HTML 태그들)
+  const isHTML = /<(table|thead|tbody|tr|td|th|p|div|h[1-6]|ul|ol|li|blockquote|pre|code|strong|em|u|s|mark|img|br|hr)[^>]*>/i.test(processedContent);
+  
+  if (isHTML) {
+    // 이미 HTML인 경우 그대로 사용
+    console.log('[ReadOnlyViewer] HTML 콘텐츠 감지 - 변환 없이 사용');
+    console.log('[ReadOnlyViewer] HTML 시작:', processedContent.substring(0, 100));
     
-    // 이미지 마크다운 패턴 확인 (디버깅용)
-    const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    const imageMatches = processedContent.match(imagePattern);
-    if (imageMatches) {
-      console.log('[ReadOnlyViewer_이미지] 마크다운 이미지:', imageMatches.length, '개');
-      imageMatches.forEach((match, index) => {
-        console.log(`[ReadOnlyViewer_이미지] ${index + 1} URL 길이:`, match.length);
-        if (match.includes('data:image')) {
-          console.log(`[ReadOnlyViewer_이미지] base64 발견`);
-        }
+    // TipTap 에디터에서 생성한 HTML을 직접 사용
+    // 별도의 변환 없이 그대로 표시
+  } else {
+    // 마크다운인 경우 HTML로 변환
+    console.log('[ReadOnlyViewer] 마크다운 콘텐츠 감지 - HTML로 변환');
+    
+    try {
+      // marked 옵션 설정
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
       });
+      
+      // 이미지 마크다운 패턴 확인 (디버깅용)
+      const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      const imageMatches = processedContent.match(imagePattern);
+      if (imageMatches) {
+        console.log('[ReadOnlyViewer_이미지] 마크다운 이미지:', imageMatches.length, '개');
+        imageMatches.forEach((match, index) => {
+          console.log(`[ReadOnlyViewer_이미지] ${index + 1} URL 길이:`, match.length);
+          if (match.includes('data:image')) {
+            console.log(`[ReadOnlyViewer_이미지] base64 발견`);
+          }
+        });
+      }
+      
+      // 마크다운을 HTML로 변환
+      const htmlContent = marked(processedContent) as string;
+      console.log('[ReadOnlyViewer_변환] 마크다운 -> HTML:', processedContent.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+      console.log('[ReadOnlyViewer_변환] HTML 길이:', htmlContent.length);
+      
+      // 변환된 HTML 콘텐츠 사용
+      processedContent = htmlContent;
+    } catch (error) {
+      console.error('[ReadOnlyViewer_오류] 마크다운 변환 실패:', error);
     }
-    
-    // YjsEditorNew와 정확히 동일한 방식으로 변환
-    // marked 사용 시 타입 에러 방지를 위해 as string 처리
-    const htmlContent = marked(processedContent) as string;
-    console.log('[ReadOnlyViewer_변환] 마크다운 -> HTML:', processedContent.substring(0, 50), ' => ', htmlContent.substring(0, 50));
-    console.log('[ReadOnlyViewer_변환] HTML 길이:', htmlContent.length);
-    
-    // 변환된 HTML 콘텐츠 사용
-    processedContent = htmlContent;
-  } catch (error) {
-    console.error('[ReadOnlyViewer_오류] 마크다운 변환 실패:', error);
   }
   
   // 항상 HTML로 직접 렌더링
