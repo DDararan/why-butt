@@ -3,7 +3,6 @@ package com.wiki.service;
 import com.wiki.entity.WikiPage;
 import com.wiki.repository.WikiPageRepository;
 import com.wiki.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -15,11 +14,18 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.commonmark.Extension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Base64;
 import org.apache.poi.util.IOUtils;
@@ -31,11 +37,32 @@ import org.apache.poi.util.IOUtils;
  * 개방-폐쇄 원칙: 새로운 문서 형식 추가 시 기존 코드 수정 없이 확장 가능
  */
 @Service
-@RequiredArgsConstructor
 public class DocumentExportService {
     
     private final WikiPageRepository wikiPageRepository;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
+    // Markdown 파서와 렌더러를 필드로 선언하여 재사용
+    private final Parser markdownParser;
+    private final HtmlRenderer htmlRenderer;
+    
+    public DocumentExportService(WikiPageRepository wikiPageRepository) {
+        this.wikiPageRepository = wikiPageRepository;
+        
+        // GFM(GitHub Flavored Markdown) 확장 기능 설정
+        List<Extension> extensions = Arrays.asList(
+            TablesExtension.create(),
+            StrikethroughExtension.create()
+        );
+        
+        this.markdownParser = Parser.builder()
+            .extensions(extensions)
+            .build();
+            
+        this.htmlRenderer = HtmlRenderer.builder()
+            .extensions(extensions)
+            .build();
+    }
     
     /**
      * Wiki 페이지를 Word 문서로 변환합니다.
@@ -116,9 +143,29 @@ public class DocumentExportService {
             
             int rowNum = 0;
             
-            // HTML 내용 파싱 - 메타 정보 없이 내용만 포함
+            // 제목 추가 (큰 폰트로)
+            XSSFRow titleRow = sheet.createRow(rowNum++);
+            XSSFCell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue(page.getTitle());
+            titleCell.setCellStyle(headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(rowNum-1, rowNum-1, 0, 5));
+            rowNum++; // 빈 줄
+            
+            // 메타 정보 추가
+            createInfoRow(sheet, rowNum++, "작성자", 
+                page.getCreationStaffName() != null ? page.getCreationStaffName() : "알 수 없음", infoStyle);
+            createInfoRow(sheet, rowNum++, "작성일", 
+                page.getCreatedAt() != null ? page.getCreatedAt().format(DATE_FORMATTER) : "알 수 없음", infoStyle);
+            createInfoRow(sheet, rowNum++, "수정자", 
+                page.getModifyStaffName() != null ? page.getModifyStaffName() : "알 수 없음", infoStyle);
+            createInfoRow(sheet, rowNum++, "수정일", 
+                page.getUpdatedAt() != null ? page.getUpdatedAt().format(DATE_FORMATTER) : "알 수 없음", infoStyle);
+            rowNum++; // 빈 줄
+            
+            // 컨텐츠를 마크다운에서 HTML로 변환
             String content = page.getContent() != null ? page.getContent() : "";
-            Document doc = Jsoup.parse(content);
+            String htmlContent = convertMarkdownToHtml(content);
+            Document doc = Jsoup.parse(htmlContent);
             
             // HTML 요소를 Excel로 변환
             rowNum = parseHtmlToExcel(doc.body(), sheet, rowNum, tableCellStyle, tableHeaderStyle);
@@ -821,6 +868,30 @@ public class DocumentExportService {
         }
         
         return currentRow;
+    }
+    
+    /**
+     * Markdown을 HTML로 변환합니다.
+     * 내용이 이미 HTML인 경우 그대로 반환합니다.
+     */
+    private String convertMarkdownToHtml(String content) {
+        if (content == null || content.isEmpty()) {
+            return "";
+        }
+        
+        // 이미 HTML인지 확인 (간단한 체크)
+        if (content.trim().startsWith("<") && content.contains(">")) {
+            return content;
+        }
+        
+        try {
+            // 마크다운을 파싱하고 HTML로 렌더링
+            Node document = markdownParser.parse(content);
+            return htmlRenderer.render(document);
+        } catch (Exception e) {
+            // 파싱 실패 시 원본 반환
+            return content;
+        }
     }
     
     /**

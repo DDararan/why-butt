@@ -560,6 +560,11 @@ const WikiPage: React.FC = () => {
         sx={{ color: 'text.secondary', mb: 2 }}
       >
         마지막 수정: {formatDate(page.updatedAt)}
+        {page.modifyStaffName && (
+          <span style={{ marginLeft: 8 }}>
+            | 수정자: {page.modifyStaffName}
+          </span>
+        )}
         {page.depth > 0 && (
           <Chip 
             label={`레벨 ${page.depth}`} 

@@ -97,10 +97,12 @@ public class WikiPageService {
         
         // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
         // 단, img 태그는 제외
-        String escapedContent = escapeHtmlExceptImages(request.getContent());
-        log.debug("Content escaping - Original length: {}, Escaped length: {}", 
-                request.getContent().length(), escapedContent.length());
-        page.setContent(escapedContent);
+        // 테스트를 위해 임시 주석처리
+        // String escapedContent = escapeHtmlExceptImages(request.getContent());
+        // log.debug("Content escaping - Original length: {}, Escaped length: {}", 
+        //         request.getContent().length(), escapedContent.length());
+        // page.setContent(escapedContent);
+        page.setContent(request.getContent());
         
         // 작성자 정보 설정
         page.setCreationStaffId(currentUserStaffId);
@@ -153,10 +155,12 @@ public class WikiPageService {
         
         // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
         // 단, img 태그는 제외
-        String escapedContent = escapeHtmlExceptImages(request.getContent());
-        log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
-                request.getContent().length(), escapedContent.length());
-        page.setContent(escapedContent);
+        // 테스트를 위해 임시 주석처리
+        // String escapedContent = escapeHtmlExceptImages(request.getContent());
+        // log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
+        //         request.getContent().length(), escapedContent.length());
+        // page.setContent(escapedContent);
+        page.setContent(request.getContent());
         
         // 페이지 타입 업데이트 로직: 최상위 페이지만 직접 타입 변경 가능
         if (page.getParent() == null && request.getPageType() != null && !request.getPageType().trim().isEmpty()) {
@@ -213,10 +217,12 @@ public class WikiPageService {
         
         // HTML 특수문자 이스케이프 처리 (< → &lt;, > → &gt; 등)
         // 단, img 태그는 제외
-        String escapedContent = escapeHtmlExceptImages(request.getContent());
-        log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
-                request.getContent().length(), escapedContent.length());
-        page.setContent(escapedContent);
+        // 테스트를 위해 임시 주석처리
+        // String escapedContent = escapeHtmlExceptImages(request.getContent());
+        // log.debug("Content escaping on update - Original length: {}, Escaped length: {}", 
+        //         request.getContent().length(), escapedContent.length());
+        // page.setContent(escapedContent);
+        page.setContent(request.getContent());
         
         // 페이지 타입 업데이트 로직: 최상위 페이지만 직접 타입 변경 가능
         if (page.getParent() == null && request.getPageType() != null && !request.getPageType().trim().isEmpty()) {
@@ -737,6 +743,10 @@ public class WikiPageService {
         detail.setPageType(page.getPageType());
         detail.setCreatedAt(page.getCreatedAt());
         detail.setUpdatedAt(page.getUpdatedAt());
+        detail.setCreationStaffId(page.getCreationStaffId());
+        detail.setCreationStaffName(page.getCreationStaffName());
+        detail.setModifyStaffId(page.getModifyStaffId());
+        detail.setModifyStaffName(page.getModifyStaffName());
         
         List<WikiPageDto.Response.Summary> children = new ArrayList<>();
         // 자식 페이지들을 displayOrder로 정렬

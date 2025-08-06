@@ -196,6 +196,12 @@ const Layout: React.FC<LayoutProps> = ({ currentUser, onLogout }) => {
                 size="small"
                 placeholder="페이지 제목이나 내용에서 검색..."
                 onKeyDown={(event) => {
+                  // e, E 키 입력 막기 (수정 모드 진입 방지)
+                  if (event.key === 'e' || event.key === 'E') {
+                    event.stopPropagation();
+                    // preventDefault를 하지 않으면 입력은 되지만 이벤트 전파는 막힘
+                    return;
+                  }
                   if (event.key === 'Enter') {
                     if (searchOptions.length > 0 && !isSearchLoading) {
                       event.preventDefault();

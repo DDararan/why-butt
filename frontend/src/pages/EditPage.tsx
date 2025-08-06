@@ -376,10 +376,10 @@ const EditPage: React.FC<EditPageProps> = ({ currentUser }) => {
     }
   }, [title, content, parentId, pageType, isNewPage, urlId, navigate, refreshPageTree]);
 
-  // Ctrl+S 단축키 이벤트 리스너 추가
+  // +S 단축키 이벤트 리스너 추가
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.key === 's') {
+      if (event.ctrlKey && (event.key === 's') || event.key === 'S') {
         event.preventDefault(); // 브라우저 기본 저장 동작 방지
         handleSubmit(event as any); // 저장 함수 호출
       }

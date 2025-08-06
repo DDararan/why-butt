@@ -115,6 +115,10 @@ public class WikiPageDto {
             private String pageType;
             private LocalDateTime createdAt;
             private LocalDateTime updatedAt;
+            private String creationStaffId;
+            private String creationStaffName;
+            private String modifyStaffId;
+            private String modifyStaffName;
             private List<Summary> children;
             private Summary parent;
             private List<History> history;

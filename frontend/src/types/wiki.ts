@@ -11,6 +11,8 @@ export interface WikiPage {
     updatedAt: string;
     creationStaffId: string; 
     creationStaffName: string;
+    modifyStaffId?: string;
+    modifyStaffName?: string;
     children?: WikiPageSummary[];
     history?: WikiPageHistory[];
 }
@@ -43,6 +45,8 @@ export interface WikiPageDetail {
     updatedAt: string;
     creationStaffId: string;
     creationStaffName: string;
+    modifyStaffId?: string;
+    modifyStaffName?: string;
     children?: WikiPageSummary[];
     parent?: WikiPageSummary;
     history?: WikiPageHistory[];
