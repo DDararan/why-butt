@@ -10,14 +10,14 @@ interface TableToolbarProps {
 }
 
 const TableToolbar: React.FC<TableToolbarProps> = ({ editor, handleToolbarClick }) => {
-  console.log('[TableToolbar] 컴포넌트 렌더링됨');
+  // console.log('[TableToolbar] 컴포넌트 렌더링됨');
   
   const [hasTable, setHasTable] = useState(false);
   const [isInTable, setIsInTable] = useState(false);
   
   // 표 상태 확인 함수
   const checkTableState = () => {
-    console.log('[TableToolbar] checkTableState 실행됨');
+    // console.log('[TableToolbar] checkTableState 실행됨');
     let foundTable = false;
     let inTable = false;
     
@@ -45,14 +45,14 @@ const TableToolbar: React.FC<TableToolbarProps> = ({ editor, handleToolbarClick 
       console.error('[TableToolbar] 표 감지 오류:', e);
     }
     
-    console.log('[TableToolbar] 표 상태:', {
-      foundTable,
-      inTable,
-      parentType: editor.state.selection.$from.parent.type.name,
-      canMergeCells: editor.can().mergeCells(),
-      canSplitCell: editor.can().splitCell(),
-      commands: Object.keys(editor.commands)
-    });
+    // console.log('[TableToolbar] 표 상태:', {
+    //   foundTable,
+    //   inTable,
+    //   parentType: editor.state.selection.$from.parent.type.name,
+    //   canMergeCells: editor.can().mergeCells(),
+    //   canSplitCell: editor.can().splitCell(),
+    //   commands: Object.keys(editor.commands)
+    // });
     
     setHasTable(foundTable);
     setIsInTable(inTable);
@@ -64,7 +64,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({ editor, handleToolbarClick 
     
     // 에디터 업데이트 이벤트 리스너
     const updateHandler = () => {
-      console.log('[TableToolbar] 에디터 업데이트 감지');
+      // console.log('[TableToolbar] 에디터 업데이트 감지');
       checkTableState();
     };
     

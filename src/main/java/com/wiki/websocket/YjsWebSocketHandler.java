@@ -81,10 +81,10 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             String path = session.getUri().getPath();
             String query = session.getUri().getQuery();
             
-            System.out.println("Y-WebSocket 연결 요청 상세정보:");
-            System.out.println("  - URI: " + uri);
-            System.out.println("  - Path: " + path);
-            System.out.println("  - Query: " + query);
+            // System.out.println("Y-WebSocket 연결 요청 상세정보:");
+            // System.out.println("  - URI: " + uri);
+            // System.out.println("  - Path: " + path);
+            // System.out.println("  - Query: " + query);
             
             // URL 파라미터 추출 및 디코딩
             Map<String, String> params = new HashMap<>();
@@ -101,16 +101,16 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                 }
             }
             
-            System.out.println("  - 디코딩된 파라미터: " + params);
+            // System.out.println("  - 디코딩된 파라미터: " + params);
             
             // Room 이름 추출 (pageId만 사용)
             String roomName = extractPageIdFromPath(path);
             String loginId = params.get("userId");
             String userName = params.get("userName");
             
-            System.out.println("  - 추출된 roomName: " + roomName);
-            System.out.println("  - 추출된 loginId: " + loginId);
-            System.out.println("  - 추출된 userName: " + userName);
+            // System.out.println("  - 추출된 roomName: " + roomName);
+            // System.out.println("  - 추출된 loginId: " + loginId);
+            // System.out.println("  - 추출된 userName: " + userName);
             
             if (roomName == null || loginId == null) {
                 System.err.println("Y-WebSocket 연결 실패: 필수 파라미터 누락 - roomName: " + roomName + ", loginId: " + loginId);
@@ -132,31 +132,31 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             
             // YjsDocument 생성 (연결 시점에 생성하여 NullPointerException 방지)
             YjsDocument doc = roomDocuments.computeIfAbsent(roomName, k -> {
-                System.out.println("Room " + k + "에 새 YjsDocument 생성");
+                // System.out.println("Room " + k + "에 새 YjsDocument 생성");
                 return new YjsDocument(k);
             });
             
-            System.out.println("Y-WebSocket 연결 설정 완료:");
-            System.out.println("  - loginId: " + loginId);
-            System.out.println("  - userName: " + userName);
-            System.out.println("  - pageId/roomName: " + roomName);
-            System.out.println("  - 세션 ID: " + session.getId());
-            System.out.println("  - sessionToRoom 매핑 완료");
-            System.out.println("  - roomSessions 등록 완료");
-            System.out.println("  - YjsDocument 생성/확인 완료: " + (doc != null ? "성공" : "실패"));
+            // System.out.println("Y-WebSocket 연결 설정 완료:");
+            // System.out.println("  - loginId: " + loginId);
+            // System.out.println("  - userName: " + userName);
+            // System.out.println("  - pageId/roomName: " + roomName);
+            // System.out.println("  - 세션 ID: " + session.getId());
+            // System.out.println("  - sessionToRoom 매핑 완료");
+            // System.out.println("  - roomSessions 등록 완료");
+            // System.out.println("  - YjsDocument 생성/확인 완료: " + (doc != null ? "성공" : "실패"));
             
-            System.out.println("Room " + roomName + " 현재 접속자 수: " + roomSessions.get(roomName).size());
+            // System.out.println("Room " + roomName + " 현재 접속자 수: " + roomSessions.get(roomName).size());
             
             // Room 접속 중인 사용자들 출력
-            System.out.println("Room " + roomName + " 접속 중인 사용자들:");
+            // System.out.println("Room " + roomName + " 접속 중인 사용자들:");
             roomSessions.get(roomName).forEach(s -> {
                 UserInfo info = sessionUserInfo.get(s.getId());
                 if (info != null) {
-                    System.out.println("  - 세션: " + s.getId() + ", loginId: " + info.loginId + ", userName: " + info.userName);
+                    // System.out.println("  - 세션: " + s.getId() + ", loginId: " + info.loginId + ", userName: " + info.userName);
                 }
             });
             
-            System.out.println("사용자 접속 완료 - Room: " + roomName + ", loginId: " + loginId + ", userName: " + userName);
+            // System.out.println("사용자 접속 완료 - Room: " + roomName + ", loginId: " + loginId + ", userName: " + userName);
             
         } catch (Exception e) {
             System.err.println("Y-WebSocket 연결 처리 중 오류 발생: " + e.getMessage());
@@ -183,33 +183,33 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
         
         byte[] payload = message.getPayload().array();
         if (payload.length == 0) {
-            System.out.println("빈 메시지 수신 - 세션: " + session.getId());
+            // System.out.println("빈 메시지 수신 - 세션: " + session.getId());
             return;
         }
         
         byte messageType = payload[0];
-        System.out.println("Y-WebSocket 메시지 수신:");
-        System.out.println("  - 세션: " + session.getId());
-        System.out.println("  - 룸: " + roomName);
-        System.out.println("  - 메시지 타입: " + messageType);
-        System.out.println("  - 메시지 크기: " + payload.length + " bytes");
-        System.out.println("  - 세션 상태: " + (session.isOpen() ? "열림" : "닫힘"));
+        // System.out.println("Y-WebSocket 메시지 수신:");
+        // System.out.println("  - 세션: " + session.getId());
+        // System.out.println("  - 룸: " + roomName);
+        // System.out.println("  - 메시지 타입: " + messageType);
+        // System.out.println("  - 메시지 크기: " + payload.length + " bytes");
+        // System.out.println("  - 세션 상태: " + (session.isOpen() ? "열림" : "닫힘"));
         
         switch (messageType) {
             case MESSAGE_SYNC:
-                System.out.println("  - SYNC 메시지 처리 중...");
+                // System.out.println("  - SYNC 메시지 처리 중...");
                 handleSyncMessage(session, roomName, payload);
                 break;
             case MESSAGE_AWARENESS:
-                System.out.println("  - AWARENESS 메시지 처리 중...");
+                // System.out.println("  - AWARENESS 메시지 처리 중...");
                 handleAwarenessMessage(session, roomName, payload);
                 break;
             case MESSAGE_AUTH:
-                System.out.println("  - AUTH 메시지 처리 중...");
+                // System.out.println("  - AUTH 메시지 처리 중...");
                 handleAuthMessage(session, payload);
                 break;
             case MESSAGE_QUERY_AWARENESS:
-                System.out.println("  - QUERY_AWARENESS 메시지 처리 중...");
+                // System.out.println("  - QUERY_AWARENESS 메시지 처리 중...");
                 handleQueryAwarenessMessage(session, roomName);
                 break;
             default:
@@ -219,7 +219,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     
     private void handleSyncMessage(WebSocketSession session, String roomName, byte[] message) throws IOException {
         if (message.length < 2) {
-            System.out.println("SYNC 메시지가 너무 짧음: " + message.length + " bytes");
+            // System.out.println("SYNC 메시지가 너무 짧음: " + message.length + " bytes");
             return;
         }
         
@@ -234,38 +234,38 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             // 문서가 없으면 새로 생성 시도
             doc = new YjsDocument(roomName);
             roomDocuments.put(roomName, doc);
-            System.out.println("  - 새 YjsDocument 생성 및 등록 완료");
+            // System.out.println("  - 새 YjsDocument 생성 및 등록 완료");
         }
         
-        System.out.println("SYNC 메시지 처리:");
-        System.out.println("  - Room: " + roomName);
-        System.out.println("  - 세션: " + session.getId());
-        System.out.println("  - SYNC 타입: " + syncType);
-        System.out.println("  - YjsDocument 상태: " + (doc != null ? "정상" : "null"));
+        // System.out.println("SYNC 메시지 처리:");
+        // System.out.println("  - Room: " + roomName);
+        // System.out.println("  - 세션: " + session.getId());
+        // System.out.println("  - SYNC 타입: " + syncType);
+        // System.out.println("  - YjsDocument 상태: " + (doc != null ? "정상" : "null"));
         
         switch (syncType) {
             case SYNC_STEP1:
                 // 클라이언트가 상태 벡터를 보냄
-                System.out.println("[초기동기화] ============= 초기 동기화 시작 =============");
-                System.out.println("[초기동기화] Sync Step 1 수신 - Room: " + roomName + ", 세션: " + session.getId());
+                // System.out.println("[초기동기화] ============= 초기 동기화 시작 =============");
+                // System.out.println("[초기동기화] Sync Step 1 수신 - Room: " + roomName + ", 세션: " + session.getId());
                 
                 // 클라이언트의 상태 벡터 읽기 (있는 경우)
                 byte[] clientStateVector = null;
                 if (message.length > 2) {
                     clientStateVector = Arrays.copyOfRange(message, 2, message.length);
-                    System.out.println("  - 클라이언트 상태 벡터 크기: " + clientStateVector.length + " bytes");
+                    // System.out.println("  - 클라이언트 상태 벡터 크기: " + clientStateVector.length + " bytes");
                 }
                 
                 // Y.js 문서 상태 로깅
-                System.out.println("[Y.js 동기화] Room " + roomName + " 문서 상태:");
-                System.out.println("  - 저장된 업데이트 개수: " + doc.getAllUpdates().size());
-                System.out.println("  - 문서 버전: " + doc.getVersion());
-                System.out.println("  - 요청 클라이언트: " + session.getId());
+                // System.out.println("[Y.js 동기화] Room " + roomName + " 문서 상태:");
+                // System.out.println("  - 저장된 업데이트 개수: " + doc.getAllUpdates().size());
+                // System.out.println("  - 문서 버전: " + doc.getVersion());
+                // System.out.println("  - 요청 클라이언트: " + session.getId());
                 
                 // 현재 Room에 접속된 클라이언트 수
                 Set<WebSocketSession> roomSessions = this.roomSessions.get(roomName);
                 if (roomSessions != null) {
-                    System.out.println("  - 현재 Room " + roomName + "에 " + roomSessions.size() + "명 접속 중");
+                    // System.out.println("  - 현재 Room " + roomName + "에 " + roomSessions.size() + "명 접속 중");
                 }
                 
                 // Step 2 응답 전송 (빈 응답)
@@ -275,15 +275,15 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     step2Out.write(MESSAGE_SYNC);
                     step2Out.write(SYNC_STEP2);
                     session.sendMessage(new BinaryMessage(step2Out.toByteArray()));
-                    System.out.println("  - [초기동기화] Sync Step2 빈 응답 전송");
+                    // System.out.println("  - [초기동기화] Sync Step2 빈 응답 전송");
                     
                     // 저장된 업데이트가 있으면 개별 UPDATE 메시지로 전송
                     List<byte[]> allUpdates = doc.getAllUpdates();
                     if (!allUpdates.isEmpty() && session.isOpen()) {
-                        System.out.println("  - [초기동기화] 저장된 업데이트 " + allUpdates.size() + "개를 개별 전송");
+                        // System.out.println("  - [초기동기화] 저장된 업데이트 " + allUpdates.size() + "개를 개별 전송");
                         for (int i = 0; i < allUpdates.size(); i++) {
                             if (!session.isOpen()) {
-                                System.out.println("    - 세션이 닫혀 업데이트 전송 중단");
+                                // System.out.println("    - 세션이 닫혀 업데이트 전송 중단");
                                 break;
                             }
                             ByteArrayOutputStream updateOut = new ByteArrayOutputStream();
@@ -292,7 +292,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                             updateOut.write(allUpdates.get(i));
                             try {
                                 session.sendMessage(new BinaryMessage(updateOut.toByteArray()));
-                                System.out.println("    - 업데이트 " + (i + 1) + "/" + allUpdates.size() + " 전송");
+                                // System.out.println("    - 업데이트 " + (i + 1) + "/" + allUpdates.size() + " 전송");
                             } catch (IOException e) {
                                 System.err.println("    - 업데이트 전송 실패: " + e.getMessage());
                                 break;
@@ -300,39 +300,36 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                         }
                     }
                 } else {
-                    System.out.println("  - [초기동기화] 세션이 이미 닫혀 있어 응답 전송 불가");
+                    // System.out.println("  - [초기동기화] 세션이 이미 닫혀 있어 응답 전송 불가");
                 }
                 
-                System.out.println("  - [초기동기화] 초기 동기화 완료!");
+                // System.out.println("  - [초기동기화] 초기 동기화 완료!");
                 break;
                 
             case SYNC_STEP2:
                 // 서버가 보낸 Step 2에 대한 응답은 무시
-                System.out.println("Sync Step 2 received (ignored) - Room: " + roomName);
+                // System.out.println("Sync Step 2 received (ignored) - Room: " + roomName);
                 break;
                 
             case SYNC_UPDATE:
                 // 업데이트 수신 및 브로드캐스트
-                System.out.println("[실시간수정] UPDATE 메시지 수신 - Room: " + roomName + ", 발신자: " + session.getId());
+                // System.out.println("[실시간수정] UPDATE 메시지 수신 - Room: " + roomName + ", 발신자: " + session.getId());
                 if (message.length > 2) {
                     byte[] update = Arrays.copyOfRange(message, 2, message.length);
-                    System.out.println("[키입력7] 업데이트 크기: " + update.length + " bytes");
+                    // System.out.println("[키입력7] 업데이트 크기: " + update.length + " bytes");
                     
                     // 업데이트를 저장하고 브로드캐스트
                     doc.addUpdate(update);
                     dirtyDocuments.add(roomName);
-                    System.out.println("[키입력8] YjsDocument에 업데이트 저장");
-                    System.out.println("  - 현재 총 업데이트 개수: " + doc.getAllUpdates().size());
+                    // System.out.println("[키입력8] YjsDocument에 업데이트 저장");
+                    // System.out.println("  - 현재 총 업데이트 개수: " + doc.getAllUpdates().size());
                     
                     // 본인을 제외한 다른 클라이언트에게 브로드캐스트
-                    System.out.println("[키입력9] 다른 클라이언트에게 브로드캐스트 시작");
+                    // System.out.println("[키입력9] 다른 클라이언트에게 브로드캐스트 시작");
                     broadcastUpdate(roomName, session.getId(), update);
                     
-                    System.out.println("업데이트 브로드캐스트 완료 - Room: " + roomName + 
-                                     ", 발신자: " + session.getId() + 
-                                     ", 크기: " + update.length + " bytes");
                 } else {
-                    System.out.println("업데이트 데이터가 없음 - 메시지 크기: " + message.length);
+                    // System.out.println("업데이트 데이터가 없음 - 메시지 크기: " + message.length);
                 }
                 break;
             default:
@@ -342,10 +339,10 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     
     private void handleAwarenessMessage(WebSocketSession session, String roomName, byte[] message) throws IOException {
         // Awareness 메시지를 다른 클라이언트에게 브로드캐스트
-        System.out.println("Awareness 메시지 처리:");
-        System.out.println("  - Room: " + roomName);
-        System.out.println("  - 발신자: " + session.getId());
-        System.out.println("  - 메시지 크기: " + message.length + " bytes");
+        // System.out.println("Awareness 메시지 처리:");
+        // System.out.println("  - Room: " + roomName);
+        // System.out.println("  - 발신자: " + session.getId());
+        // System.out.println("  - 메시지 크기: " + message.length + " bytes");
         
         Set<WebSocketSession> sessions = roomSessions.get(roomName);
         if (sessions != null) {
@@ -363,10 +360,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     }
                 }
             }
-            
-            System.out.println("Awareness 브로드캐스트 완료 - Room: " + roomName + 
-                             ", 발신자: " + session.getId() + 
-                             ", 성공: " + successCount + "건, 실패: " + failCount + "건");
+           
         } else {
             System.err.println("Awareness 브로드캐스트 실패: Room " + roomName + "의 세션 목록을 찾을 수 없음");
         }
@@ -374,42 +368,42 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     
     private void handleAuthMessage(WebSocketSession session, byte[] message) {
         // 인증 메시지 처리 (현재는 간단히 로깅만)
-        System.out.println("인증 메시지 수신 - 세션: " + session.getId() + ", 크기: " + message.length + " bytes");
+        // System.out.println("인증 메시지 수신 - 세션: " + session.getId() + ", 크기: " + message.length + " bytes");
     }
     
     private void handleQueryAwarenessMessage(WebSocketSession session, String roomName) throws IOException {
         // 현재 room의 모든 awareness 상태 전송
-        System.out.println("Awareness 쿼리 - Room: " + roomName + ", 세션: " + session.getId());
+        // System.out.println("Awareness 쿼리 - Room: " + roomName + ", 세션: " + session.getId());
         
         // 현재 접속한 사용자들의 정보 전송
         sendConnectedUsers(session, roomName);
-        System.out.println("연결된 사용자 정보 전송 완료");
+        // System.out.println("연결된 사용자 정보 전송 완료");
     }
     
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        System.out.println("Y-WebSocket 연결 종료 시작 - 세션: " + session.getId());
+        // System.out.println("Y-WebSocket 연결 종료 시작 - 세션: " + session.getId());
         
         String roomName = sessionToRoom.remove(session.getId());
         UserInfo userInfo = sessionUserInfo.remove(session.getId());
         
-        System.out.println("세션 정리 결과:");
-        System.out.println("  - 제거된 roomName: " + roomName);
-        System.out.println("  - 제거된 userInfo: " + (userInfo != null ? userInfo.loginId : "null"));
-        System.out.println("  - sessionToRoom 크기: " + sessionToRoom.size());
-        System.out.println("  - sessionUserInfo 크기: " + sessionUserInfo.size());
+        // System.out.println("세션 정리 결과:");
+        // System.out.println("  - 제거된 roomName: " + roomName);
+        // System.out.println("  - 제거된 userInfo: " + (userInfo != null ? userInfo.loginId : "null"));
+        // System.out.println("  - sessionToRoom 크기: " + sessionToRoom.size());
+        // System.out.println("  - sessionUserInfo 크기: " + sessionUserInfo.size());
         
         if (roomName != null) {
             Set<WebSocketSession> sessions = roomSessions.get(roomName);
             if (sessions != null) {
                 boolean removed = sessions.remove(session);
-                System.out.println("  - roomSessions에서 제거 성공: " + removed);
+                // System.out.println("  - roomSessions에서 제거 성공: " + removed);
                 
-                System.out.println("Y-WebSocket 연결 종료 - loginId: " + 
-                           (userInfo != null ? userInfo.loginId : "unknown") +
-                           ", pageId: " + roomName +
-                           ", 세션: " + session.getId() +
-                           ", 남은 접속자: " + sessions.size());
+                // System.out.println("Y-WebSocket 연결 종료 - loginId: " + 
+                //            (userInfo != null ? userInfo.loginId : "unknown") +
+                //            ", pageId: " + roomName +
+                //            ", 세션: " + session.getId() +
+                //            ", 남은 접속자: " + sessions.size());
                 
                 if (sessions.isEmpty()) {
                     // 마지막 사용자가 나간 경우
@@ -419,10 +413,10 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                     // Y.js 문서를 즉시 메모리에서 제거
                     YjsDocument removedDoc = roomDocuments.remove(roomName);
                     if (removedDoc != null) {
-                        System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 및 Y.js 문서 제거");
-                        System.out.println("    - 제거된 Y.js 문서의 업데이트 개수: " + removedDoc.getAllUpdates().size());
+                        // System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 및 Y.js 문서 제거");
+                        // System.out.println("    - 제거된 Y.js 문서의 업데이트 개수: " + removedDoc.getAllUpdates().size());
                     } else {
-                        System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 제거 (Y.js 문서는 이미 없음)");
+                        // System.out.println("  - 마지막 사용자 퇴장으로 Room " + roomName + " 세션 목록 제거 (Y.js 문서는 이미 없음)");
                     }
                 } else {
 
@@ -434,7 +428,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             System.err.println("경고: 세션 " + session.getId() + "의 roomName을 찾을 수 없음");
         }
         
-        System.out.println("Y-WebSocket 연결 종료 완료 - 세션: " + session.getId());
+        // System.out.println("Y-WebSocket 연결 종료 완료 - 세션: " + session.getId());
     }
     
     @Override
@@ -454,15 +448,15 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
     private void broadcastUpdate(String roomName, String excludeSessionId, byte[] update) {
         Set<WebSocketSession> sessions = roomSessions.get(roomName);
         if (sessions == null) {
-            System.out.println("[키입력10] 브로드캐스트 실패: Room " + roomName + "에 세션이 없음");
+            // System.out.println("[키입력10] 브로드캐스트 실패: Room " + roomName + "에 세션이 없음");
             return;
         }
         
-        System.out.println("[키입력11] 브로드캐스트 시작");
-        System.out.println("  - 룸: " + roomName);
-        System.out.println("  - 발신자 제외: " + excludeSessionId);
-        System.out.println("  - 업데이트 크기: " + update.length + " bytes");
-        System.out.println("  - 룸 내 총 세션 수: " + sessions.size());
+        // System.out.println("[키입력11] 브로드캐스트 시작");
+        // System.out.println("  - 룸: " + roomName);
+        // System.out.println("  - 발신자 제외: " + excludeSessionId);
+        // System.out.println("  - 업데이트 크기: " + update.length + " bytes");
+        // System.out.println("  - 룸 내 총 세션 수: " + sessions.size());
         
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
@@ -482,7 +476,7 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
             if (!session.getId().equals(excludeSessionId)) {
                 if (session.isOpen()) {
                     try {
-                        System.out.println("[키입력12] 업데이트 전송 - 수신자: " + session.getId());
+                        // System.out.println("[키입력12] 업데이트 전송 - 수신자: " + session.getId());
                         session.sendMessage(new BinaryMessage(message));
                         successCount++;
                     } catch (IOException e) {
@@ -494,14 +488,14 @@ public class YjsWebSocketHandler extends BinaryWebSocketHandler {
                         }
                     }
                 } else {
-                    System.out.println("[키입력12-skip] 세션이 닫혀 있어 전송 건너뛰기: " + session.getId());
+                    // System.out.println("[키입력12-skip] 세션이 닫혀 있어 전송 건너뛰기: " + session.getId());
                 }
             } else if (session.getId().equals(excludeSessionId)) {
-                System.out.println("[키입력14] 발신자 제외: " + session.getId());
+                // System.out.println("[키입력14] 발신자 제외: " + session.getId());
             }
         }
         
-        System.out.println("[키입력15] 브로드캐스트 완료: 성공 " + successCount + "건, 실패 " + failCount + "건");
+        // System.out.println("[키입력15] 브로드캐스트 완료: 성공 " + successCount + "건, 실패 " + failCount + "건");
     }
     
     private void sendConnectedUsers(WebSocketSession session, String roomName) {

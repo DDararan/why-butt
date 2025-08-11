@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.7</version>
+        <version>3.5.4</version>
         <relativePath/>
     </parent>
     
@@ -50,14 +50,6 @@
                 <version>10.1.41</version>
             </dependency>
             
-            <!-- Netty 최신 버전 강제 지정 -->
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>4.1.97.Final</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -160,6 +152,12 @@
     </dependencies>
 
     <build>
+	  <resources>
+        <resource>
+          <directory>src/main/resources</directory>
+          <filtering>true</filtering>
+        </resource>
+      </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -188,6 +186,7 @@
                         </exclude>
                     </excludes>
                     <executable>true</executable>
+                    <jvmArguments>-Xms2048m -Xmx8192m</jvmArguments>
                 </configuration>
             </plugin>
             

@@ -116,7 +116,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('strikethrough', {
       filter: ['s', 'del', 'strike'],
       replacement: function (content) {
-        console.log('[Turndown] 취소선 변환:', content);
         return '~~' + content + '~~';
       }
     });
@@ -125,7 +124,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('underline', {
       filter: ['u'],
       replacement: function (content) {
-        console.log('[Turndown] 언더라인 변환:', content);
         // 확장 마크다운 문법 사용: ++텍스트++
         return '++' + content + '++';
       }
@@ -135,7 +133,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('emphasis', {
       filter: ['em', 'i'],
       replacement: function (content) {
-        console.log('[Turndown] 이탤릭 변환:', content);
         return '*' + content + '*';
       }
     });
@@ -144,7 +141,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('strong', {
       filter: ['strong', 'b'],
       replacement: function (content) {
-        console.log('[Turndown] 볼드 변환:', content);
         return '**' + content + '**';
       }
     });
@@ -153,7 +149,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('highlight', {
       filter: ['mark'],
       replacement: function (content) {
-        console.log('[Turndown] 하이라이트 변환:', content);
         // 확장 마크다운 문법 사용: ==텍스트==
         return '==' + content + '==';
       }
@@ -166,9 +161,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         const alt = node.alt || '이미지';
         const src = node.getAttribute('src') || '';
         const className = node.className || '';
-        console.log('[Turndown] 이미지 변환 - HTML 태그 유지');
-        console.log('[Turndown] src 길이:', src.length);
-        console.log('[Turndown] className:', className);
         
         // img 태그를 그대로 유지
         if (className) {
@@ -184,7 +176,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     service.addRule('table', {
       filter: 'table',
       replacement: function (content, node: any) {
-        console.log('[Turndown] 테이블 변환 - HTML 태그 유지');
         // outerHTML을 사용하여 전체 테이블 HTML을 그대로 유지
         return '\n' + node.outerHTML + '\n';
       }
@@ -253,10 +244,10 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         try {
           await wikiService.syncContent(pageId, content);
           lastSyncedContentRef.current = content;
-          console.log('[Y.js] 백엔드 동기화 성공 (2초 디바운스)');
-          console.log('[Y.js] 동기화된 컨텐츠 길이:', content.length);
+//          console.log('[Y.js] 백엔드 동기화 성공 (2초 디바운스)');
+//          console.log('[Y.js] 동기화된 컨텐츠 길이:', content.length);
         } catch (error) {
-          console.error('[Y.js] 백엔드 동기화 실패:', error);
+//          console.error('[Y.js] 백엔드 동기화 실패:', error);
         }
       }
     }, 2000);
@@ -273,14 +264,10 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
 
   // Y.Doc 초기화 - 컴포넌트별로 고유한 인스턴스 생성
   const ydoc = useMemo(() => {
-    console.log('[] Y.Doc 생성/초기화', {
-      pageId,
-      documentName
-    });
     
     // 기존 Y.Doc 정리
     if (ydocRef.current) {
-      console.log('[] 기존 Y.Doc 파기');
+//      console.log('[] 기존 Y.Doc 파기');
       // 기존 Y.Doc 정리
       ydocRef.current.destroy();
     }
@@ -289,18 +276,13 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     const newDoc = new Y.Doc();
     ydocRef.current = newDoc;
     
-    console.log('[페이지수정13] 새 Y.Doc 생성 완료');
+//    console.log('[페이지수정13] 새 Y.Doc 생성 완료');
     
     return newDoc;
   }, [pageId, documentName]); // pageId 변경 시 새 문서 생성
 
   // WebSocket Provider 초기 설정 (Docmost 방식)
   const wsProvider = useMemo(() => {
-    console.log('[페이지수정14] WebSocket Provider 생성 시작', {
-      pageId,
-      documentName
-    });
-    
     if (typeof window === 'undefined') return null;
     
     // WebSocket Provider 초기화
@@ -355,17 +337,6 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       name: currentUser.userName,
       color: userColor,
       id: loginId || currentUser.staffId // 고유 ID 추가
-    });
-    
-    // Provider awareness 설정
-    console.log('[페이지수정15] WebSocket Provider 생성 완료', {
-      wsUrl,
-      documentName,
-      params: {
-        loginId: loginId,
-        userId: currentUser.staffId,
-        userName: currentUser.userName,
-      }
     });
     
     return provider;
@@ -438,14 +409,14 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     immediatelyRender: false, // 초기 렌더링을 지연하여 Y.js 동기화 대기
     editable: true,
     onCreate: ({ editor }) => {
-      console.log('[페이지수정16] TipTap 에디터 생성 완료');
+//      console.log('[페이지수정16] TipTap 에디터 생성 완료');
       
       // 에디터 생성 시 Y.js fragment 확인
       const fragment = ydoc.getXmlFragment('content');
-      console.log('[페이지수정16-1] 에디터 생성 시 Y.js fragment 상태:');
-      console.log('  - fragment.toString():', fragment.toString());
-      console.log('  - fragment.length:', fragment.length);
-      console.log('  - 에디터 초기 HTML:', editor.getHTML());
+//      console.log('[페이지수정16-1] 에디터 생성 시 Y.js fragment 상태:');
+//      console.log('  - fragment.toString():', fragment.toString());
+//      console.log('  - fragment.length:', fragment.length);
+//      console.log('  - 에디터 초기 HTML:', editor.getHTML());
       
       setEditorReady(true);
     },
@@ -454,25 +425,25 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       
       // 타이핑 시 Y.js 저장 로그
       if (transaction.docChanged) {
-        console.log('[키입력1] TipTap 에디터 변경 감지', {
-          docChanged: transaction.docChanged,
-          steps: transaction.steps.length,
-          content: editor.getHTML().substring(0, 50) + '...'
-        });
+//        console.log('[키입력1] TipTap 에디터 변경 감지', {
+//          docChanged: transaction.docChanged,
+//          steps: transaction.steps.length,
+//          content: editor.getHTML().substring(0, 50) + '...'
+//        });
         
         // Y.js fragment 상태 확인
         const fragment = ydoc.getXmlFragment('content');
-        console.log('[키입력3-1] Y.js fragment 현재 상태:');
-        console.log('  - fragment.toString():', fragment.toString());
-        console.log('  - fragment.length:', fragment.length);
+//        console.log('[키입력3-1] Y.js fragment 현재 상태:');
+//        console.log('  - fragment.toString():', fragment.toString());
+//        console.log('  - fragment.length:', fragment.length);
         
         // 이미지가 포함되어 있는지 확인
         const html = editor.getHTML();
         if (html.includes('<img')) {
-          console.log('[이미지확인] 에디터에 이미지 포함됨');
+//          console.log('[이미지확인] 에디터에 이미지 포함됨');
           const imgMatch = html.match(/<img[^>]+src="([^"]+)"/);
           if (imgMatch) {
-            console.log('[이미지확인] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
+//            console.log('[이미지확인] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
           }
         }
       }
@@ -480,38 +451,11 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       // 툴바 액션이나 IME 조합 중이 아닌 경우에만 onChange 호출
       if (!isToolbarActionRef.current && !isComposingRef.current) {
         if (onChangeRef.current && transaction.docChanged) {
-          console.log('[키입력2] onChange 호출');
           const html = editor.getHTML();
-          console.log('[onChange] HTML 내용:', html.substring(0, 200) + '...');
-          
-          // 스타일 태그 확인
-          if (html.includes('<s>') || html.includes('<del>') || html.includes('<strike>')) {
-            console.log('[onChange] 취소선 태그 발견!');
-          }
-          if (html.includes('<u>')) {
-            console.log('[onChange] 언더라인 태그 발견!');
-          }
-          if (html.includes('<strong>') || html.includes('<b>')) {
-            console.log('[onChange] 볼드 태그 발견!');
-          }
-          if (html.includes('<em>') || html.includes('<i>')) {
-            console.log('[onChange] 이탤릭 태그 발견!');
-          }
-          if (html.includes('<mark')) {
-            console.log('[onChange] 하이라이트 태그 발견!');
-          }
-          
           const markdown = turndownService.turndown(html);
-          console.log('[onChange] 변환된 마크다운:', markdown.substring(0, 100) + '...');
           onChangeRef.current(markdown);
         }
-      } else {
-        console.log('[키입력2-스킵] onChange 호출 스킵', {
-          isToolbarAction: isToolbarActionRef.current,
-          isComposing: isComposingRef.current,
-          docChanged: transaction.docChanged
-        });
-      }
+      } 
     },
     // onTransaction, onSelectionUpdate 제거
   }, [wsProvider, userColor, ydoc, defaultValue]);
@@ -520,16 +464,16 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
 
   // 초기 데이터 동기화를 위한 함수 (페이지 수정 버튼 클릭 시 사용)
   const handleInitialDataSync = useCallback((fragmentLength: number, currentContent: string) => {
-    console.log('[페이지수정_초기화] 초기 데이터 동기화 시작');
-    console.log('  - fragment 길이:', fragmentLength);
-    console.log('  - 현재 컨텐츠 길이:', currentContent.length);
-    console.log('  - DB defaultValue 길이:', defaultValue ? defaultValue.length : 0);
+//    console.log('[페이지수정_초기화] 초기 데이터 동기화 시작');
+//    console.log('  - fragment 길이:', fragmentLength);
+//    console.log('  - 현재 컨텐츠 길이:', currentContent.length);
+//    console.log('  - DB defaultValue 길이:', defaultValue ? defaultValue.length : 0);
     
     const isEmptyContent = !currentContent || currentContent === '<p></p>' || currentContent.length < 10;
     
     // Y.js 문서가 비어있거나 의심스러운 경우 DB 내용 사용
     if (defaultValue && editor && (fragmentLength === 0 || isEmptyContent)) {
-      console.log('[페이지수정_초기화] Y.js 문서가 비어있음 - DB 내용으로 초기화');
+ //     console.log('[페이지수정_초기화] Y.js 문서가 비어있음 - DB 내용으로 초기화');
       try {
                   // 마크다운을 HTML로 변환
           marked.setOptions({
@@ -541,35 +485,32 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
           const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
           const imageMatches = defaultValue.match(imagePattern);
           if (imageMatches) {
-            console.log('[페이지수정_초기화] 이미지 마크다운 발견:', imageMatches);
+//            console.log('[페이지수정_초기화] 이미지 마크다운 발견:', imageMatches);
             imageMatches.forEach(match => {
-              console.log('[페이지수정_초기화] 이미지 URL 길이:', match.length);
+//              console.log('[페이지수정_초기화] 이미지 URL 길이:', match.length);
               if (match.includes('data:image')) {
-                console.log('[페이지수정_초기화] base64 이미지 발견');
+//                console.log('[페이지수정_초기화] base64 이미지 발견');
               }
             });
           }
           
           const htmlContent = marked(defaultValue) as string;
-          console.log('[페이지수정_초기화] 마크다운 -> HTML 변환:', defaultValue.substring(0, 50), ' => ', htmlContent.substring(0, 50));
-          console.log('[페이지수정_초기화] 전체 HTML 내용 길이:', htmlContent.length);
+//          console.log('[페이지수정_초기화] 마크다운 -> HTML 변환:', defaultValue.substring(0, 50), ' => ', htmlContent.substring(0, 50));
+//          console.log('[페이지수정_초기화] 전체 HTML 내용 길이:', htmlContent.length);
           
           // HTML에 img 태그가 있는지 확인
           const imgPattern = /<img[^>]+>/g;
-          const imgMatches = htmlContent.match(imgPattern);
-          if (imgMatches) {
-            console.log('[페이지수정_초기화] HTML img 태그 발견:', imgMatches.length, '개');
-          }
+
         
         // 에디터 내용 설정
         editor.commands.setContent(htmlContent);
-        console.log('[페이지수정_초기화] DB 내용 설정 완료');
+//        console.log('[페이지수정_초기화] DB 내용 설정 완료');
       } catch (e) {
-        console.error('[페이지수정_초기화] 초기 내용 설정 실패:', e);
+//        console.error('[페이지수정_초기화] 초기 내용 설정 실패:', e);
       }
     } else {
-      console.log('[페이지수정_초기화] Y.js 문서에 유효한 내용 있음 - 그대로 사용');
-      console.log('  - Y.js 내용:', currentContent.substring(0, 100) + '...');
+//      console.log('[페이지수정_초기화] Y.js 문서에 유효한 내용 있음 - 그대로 사용');
+//      console.log('  - Y.js 내용:', currentContent.substring(0, 100) + '...');
     }
   }, [defaultValue, editor]);
 
@@ -593,14 +534,14 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         // WebSocket 연결 상태 이벤트
         remoteProviderRef.current.on('status', (event: any) => {
           // WebSocket 상태 변경
-          console.log('[Y.js] WebSocket 상태 변경:', event.status);
-          console.log('[Y.js] 페이지 ID:', pageId, ', Room:', documentName);
+//          console.log('[Y.js] WebSocket 상태 변경:', event.status);
+//          console.log('[Y.js] 페이지 ID:', pageId, ', Room:', documentName);
           setConnectionStatus(event.status);
           
           if (event.status === 'connected') {
             // WebSocket 연결 완료
-            console.log('[초기동기화] WebSocket 연결 완료');
-            console.log('[초기동기화] SyncStep1 메시지 전송 시작...');
+//            console.log('[초기동기화] WebSocket 연결 완료');
+//            console.log('[초기동기화] SyncStep1 메시지 전송 시작...');
             setProviderReady(true);
             
             skipBroadcastRef.current = true;
@@ -611,15 +552,15 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         // 동기화 상태 변경 이벤트
         remoteProviderRef.current.on('sync', (isSynced: boolean) => {
           // 원격 동기화 상태
-          console.log('[초기동기화] ============= Y.js 동기화 상태 변경 =============');
-          console.log('[초기동기화] 동기화 상태:', isSynced ? '완료' : '진행중');
+//          console.log('[초기동기화] ============= Y.js 동기화 상태 변경 =============');
+//          console.log('[초기동기화] 동기화 상태:', isSynced ? '완료' : '진행중');
           setRemoteSynced(isSynced);
           
           // 초기 동기화 완료 감지
           if (isSynced && !initialSyncCompleted) {
-            console.log('[초기동기화] ✅ 초기 동기화 완료!');
-            console.log('[초기동기화] - SyncStep1 → SyncStep2 → SyncDone 프로토콜 완료');
-            console.log('[초기동기화] - 이제부터 실시간 UPDATE 메시지로 동기화됩니다.');
+//            console.log('[초기동기화] ✅ 초기 동기화 완료!');
+//            console.log('[초기동기화] - SyncStep1 → SyncStep2 → SyncDone 프로토콜 완료');
+//            console.log('[초기동기화] - 이제부터 실시간 UPDATE 메시지로 동기화됩니다.');
             
             // 초기 동기화 플래그 해제
             setTimeout(() => {
@@ -637,43 +578,43 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
               
               // UndoManager 상태 변경 감지
               undoManagerRef.current.on('stack-item-added', () => {
-                console.log('[UndoManager] 변경사항 추가됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
+//                console.log('[UndoManager] 변경사항 추가됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
                 setCanUndo(undoManagerRef.current!.undoStack.length > 0);
               });
               
               undoManagerRef.current.on('stack-item-popped', () => {
-                console.log('[UndoManager] 변경사항 취소됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
+//                console.log('[UndoManager] 변경사항 취소됨, undo 가능:', undoManagerRef.current!.undoStack.length > 0);
                 setCanUndo(undoManagerRef.current!.undoStack.length > 0);
               });
               
-              console.log('[UndoManager] 초기화 완료 - clientID:', ydoc.clientID);
+//              console.log('[UndoManager] 초기화 완료 - clientID:', ydoc.clientID);
             }
             
             // 약간의 지연을 두고 에디터 내용 확인
             setTimeout(() => {
-              console.log('[디버그] setTimeout 내부 실행');
+//              console.log('[디버그] setTimeout 내부 실행');
               // Y.js 문서 현재 상태 확인
               const fragment = ydoc.getXmlFragment('content');
               const fragmentLength = fragment.length;
               
               // Y.js 문서 내부 구조 상세 로그
-              console.log('[디버그] Y.js 문서 구조 분석:');
-              console.log('  - fragment 객체:', fragment);
-              console.log('  - fragment.toArray():', fragment.toArray());
+//              console.log('[디버그] Y.js 문서 구조 분석:');
+//              console.log('  - fragment 객체:', fragment);
+//              console.log('  - fragment.toArray():', fragment.toArray());
               if (fragment.length > 0) {
                 const firstItem = fragment.get(0);
-                console.log('  - 첫 번째 아이템:', firstItem);
-                console.log('  - 첫 번째 아이템 타입:', firstItem?.constructor.name);
+//                console.log('  - 첫 번째 아이템:', firstItem);
+//                console.log('  - 첫 번째 아이템 타입:', firstItem?.constructor.name);
               }
               
               // 에디터가 준비되었을 때 Y.js 문서의 실제 내용 확인
               let currentContent = '';
               if (editor && !editor.isDestroyed) {
                 currentContent = editor.getHTML();
-                console.log('[Y.js] 초기 동기화 - 현재 에디터 내용:', currentContent.substring(0, 100) + '...');
-                console.log('[Y.js] 초기 동기화 - 에디터 내용 길이:', currentContent.length);
-                console.log('[Y.js] 초기 동기화 - fragment 노드 수:', fragmentLength);
-                console.log('[Y.js] 초기 동기화 - defaultValue 길이:', defaultValue ? defaultValue.length : 0);
+//                console.log('[Y.js] 초기 동기화 - 현재 에디터 내용:', currentContent.substring(0, 100) + '...');
+//                console.log('[Y.js] 초기 동기화 - 에디터 내용 길이:', currentContent.length);
+//                console.log('[Y.js] 초기 동기화 - fragment 노드 수:', fragmentLength);
+//                console.log('[Y.js] 초기 동기화 - defaultValue 길이:', defaultValue ? defaultValue.length : 0);
               }
               
               // 초기 데이터 동기화 함수 호출
@@ -682,7 +623,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
               setInitialSyncCompleted(true);
               
               // 초기 동기화 완료 로그
-              console.log('[Y.js] 초기 동기화 처리 완료');
+//              console.log('[Y.js] 초기 동기화 처리 완료');
               
               // 타임아웃 정리
               if (initialSyncTimeoutRef.current) {
@@ -696,7 +637,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         // Awareness 변경 감지
         remoteProviderRef.current.awareness.on('change', () => {
           const states = Array.from(remoteProviderRef.current?.awareness.getStates() || []);
-          console.log('[Awareness] 상태 변경 감지:', states);
+//          console.log('[Awareness] 상태 변경 감지:', states);
           
           const users = states
             .map(([clientId, state]) => {
@@ -714,7 +655,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
             })
             .filter((user): user is NonNullable<typeof user> => user !== null);
           
-          console.log('[Awareness] 접속 사용자 목록:', users);
+//          console.log('[Awareness] 접속 사용자 목록:', users);
           setConnectedUsers(users);
           // 접속 사용자 업데이트
         });
@@ -736,41 +677,34 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
           
           // 브로드캐스트 스킵 플래그 확인
           if (skipBroadcastRef.current) {
-            console.log('[페이지수정19] 브로드캐스트 스킵 - Y.js 업데이트 무시');
+//            console.log('[페이지수정19] 브로드캐스트 스킵 - Y.js 업데이트 무시');
             return; // 브로드캐스트 스킵
           }
-          
-          console.log('[실시간수정] Y.js UPDATE 메시지 생성', {
-            origin: originName,
-            updateSize: update.length,
-            docId: ydoc.clientID,
-            skipBroadcast: skipBroadcastRef.current
-          });
-          
+
           // Y.js 문서 현재 상태 확인
           const fragment = ydoc.getXmlFragment('content');
-          console.log('[키입력3-1] Y.js fragment 현재 상태:');
-          console.log('  - fragment.toString():', fragment.toString());
-          console.log('  - fragment.length:', fragment.length);
+ //         console.log('[키입력3-1] Y.js fragment 현재 상태:');
+//          console.log('  - fragment.toString():', fragment.toString());
+//          console.log('  - fragment.length:', fragment.length);
           
           if (editor && !editor.isDestroyed) {
             const editorContent = editor.getHTML();
-            console.log('[키입력3-2] 에디터 현재 상태:');
-            console.log('  - 에디터 HTML:', editorContent.substring(0, 100) + '...');
-            console.log('  - 에디터 길이:', editorContent.length);
+//            console.log('[키입력3-2] 에디터 현재 상태:');
+//            console.log('  - 에디터 HTML:', editorContent.substring(0, 100) + '...');
+//            console.log('  - 에디터 길이:', editorContent.length);
             
             // 이미지가 포함된 경우 WebSocket 전송 확인
             if (editorContent.includes('<img')) {
-              console.log('[이미지동기화] 이미지가 포함된 Y.js 업데이트 감지');
-              console.log('[이미지동기화] wsProvider 연결 상태:', wsProvider.wsconnected);
-              console.log('[이미지동기화] WebSocket readyState:', wsProvider.ws?.readyState);
+//              console.log('[이미지동기화] 이미지가 포함된 Y.js 업데이트 감지');
+//              console.log('[이미지동기화] wsProvider 연결 상태:', wsProvider.wsconnected);
+//              console.log('[이미지동기화] WebSocket readyState:', wsProvider.ws?.readyState);
               
               // Y.js는 자동으로 브로드캐스트해야 함
               // 수동으로 동기화 트리거
               if (wsProvider.wsconnected) {
-                console.log('[이미지동기화] WebSocket이 연결되어 있음 - Y.js가 자동으로 브로드캐스트해야 함');
+ //               console.log('[이미지동기화] WebSocket이 연결되어 있음 - Y.js가 자동으로 브로드캐스트해야 함');
               } else {
-                console.log('[이미지동기화] WebSocket이 연결되어 있지 않음!');
+//                console.log('[이미지동기화] WebSocket이 연결되어 있지 않음!');
               }
             }
           }
@@ -779,18 +713,18 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         // 원격 업데이트일 때 로그 (WebSocket으로부터 받은 업데이트)
         if ((origin === wsProvider || originName === 'WebsocketProvider') && editor && !editor.isDestroyed) {
           const currentContent = editor.getHTML();
-          console.log('[페이지수정17] 원격 Y.js 업데이트 수신', {
-            origin: originName,
-            contentLength: currentContent.length,
-            content: currentContent.substring(0, 100) + '...'
-          });
+//          console.log('[페이지수정17] 원격 Y.js 업데이트 수신', {
+//            origin: originName,
+//            contentLength: currentContent.length,
+//            content: currentContent.substring(0, 100) + '...'
+//          });
           
           // 이미지가 포함된 업데이트인지 확인
           if (currentContent.includes('<img')) {
-            console.log('[원격이미지] 원격에서 이미지 업데이트 수신');
+//            console.log('[원격이미지] 원격에서 이미지 업데이트 수신');
             const imgMatch = currentContent.match(/<img[^>]+src="([^"]+)"/);
             if (imgMatch) {
-              console.log('[원격이미지] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
+//              console.log('[원격이미지] 이미지 src 시작부분:', imgMatch[1].substring(0, 100));
               
               // 에디터 강제 리렌더링
               setTimeout(() => {
@@ -804,7 +738,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
                   // selection 복원
                   editor.commands.setTextSelection({ from, to });
                   
-                  console.log('[원격이미지] 에디터 view 강제 업데이트 완료');
+//                  console.log('[원격이미지] 에디터 view 강제 업데이트 완료');
                 }
               }, 50);
             }
@@ -817,30 +751,30 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
             
             // 초기 동기화 origin인 경우 onChange 호출 안함
             if (origin === 'initial-sync') {
-              console.log('[페이지수정_초기화] 초기 동기화 - onChange/백엔드 동기화 건너뛰기');
+//              console.log('[페이지수정_초기화] 초기 동기화 - onChange/백엔드 동기화 건너뛰기');
               return;
             }
             
             // 브로드캐스트 스킵 플래그 확인
             if (skipBroadcastRef.current) {
-              console.log('[페이지수정20] 브로드캐스트 스킵 - onChange/백엔드 동기화 건너뛰기');
+//              console.log('[페이지수정20] 브로드캐스트 스킵 - onChange/백엔드 동기화 건너뛰기');
               return;
             }
             
-            console.log('[키입력4] Y.js 변경을 onChange로 전달');
+//            console.log('[키입력4] Y.js 변경을 onChange로 전달');
             const htmlContent = editor.getHTML();
-            console.log('[Y.js onChange] HTML 내용:', htmlContent.substring(0, 200) + '...');
+//            console.log('[Y.js onChange] HTML 내용:', htmlContent.substring(0, 200) + '...');
             
             // 취소선/언더라인 태그 확인
             if (htmlContent.includes('<s>') || htmlContent.includes('<del>') || htmlContent.includes('<strike>')) {
-              console.log('[Y.js onChange] 취소선 태그 발견!');
+//              console.log('[Y.js onChange] 취소선 태그 발견!');
             }
             if (htmlContent.includes('<u>')) {
-              console.log('[Y.js onChange] 언더라인 태그 발견!');
+//              console.log('[Y.js onChange] 언더라인 태그 발견!');
             }
             
             const markdownContent = turndownService.turndown(htmlContent);
-            console.log('[Y.js onChange] 변환된 마크다운:', markdownContent.substring(0, 100) + '...');
+//            console.log('[Y.js onChange] 변환된 마크다운:', markdownContent.substring(0, 100) + '...');
             onChangeRef.current(markdownContent);
             // 백엔드로 동기화
             // console.log('[키입력5] 백엔드 동기화 시작 (2초 디바운스)');
@@ -856,7 +790,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     
     return () => {
       if (isUnmountingRef.current) {
-        console.log('[YjsEditor] 실제 언마운트 감지 - Provider 정리');
+//        console.log('[YjsEditor] 실제 언마운트 감지 - Provider 정리');
         
         // 타이머 정리
         if (initialSyncTimeoutRef.current) {
@@ -875,7 +809,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         
         // UndoManager 정리
         if (undoManagerRef.current) {
-          console.log('[UndoManager] 정리 중...');
+//          console.log('[UndoManager] 정리 중...');
           undoManagerRef.current.clear(); // undo/redo 스택 초기화
           undoManagerRef.current = null;
         }
@@ -903,7 +837,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
     return () => {
       // 실제 언마운트 플래그 설정
       isUnmountingRef.current = true;
-      console.log('[YjsEditor] 컴포넌트 언마운트 - 정리 시작');
+//      console.log('[YjsEditor] 컴포넌트 언마운트 - 정리 시작');
       
       // Provider 정리 (언마운트 시에만)
       if (localProviderRef.current) {
@@ -938,31 +872,31 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   // IME 조합 이벤트 감지
   useEffect(() => {
     const handleCompositionStart = () => {
-      console.log('[IME] 한글 조합 시작 - isComposingRef.current = true');
+//      console.log('[IME] 한글 조합 시작 - isComposingRef.current = true');
       isComposingRef.current = true;
     };
     
     const handleCompositionEnd = () => {
-      console.log('[IME] 한글 조합 종료 - isComposingRef.current = false');
+//      console.log('[IME] 한글 조합 종료 - isComposingRef.current = false');
       isComposingRef.current = false;
       
       // 조합 종료 후 onChange 강제 호출
       if (onChangeRef.current && editor && !editor.isDestroyed) {
         setTimeout(() => {
-          console.log('[IME] 조합 종료 후 onChange 강제 호출');
+//          console.log('[IME] 조합 종료 후 onChange 강제 호출');
           const html = editor.getHTML();
-          console.log('[IME] HTML 내용:', html.substring(0, 200) + '...');
+//          console.log('[IME] HTML 내용:', html.substring(0, 200) + '...');
           
           // 취소선/언더라인 태그 확인
           if (html.includes('<s>') || html.includes('<del>') || html.includes('<strike>')) {
-            console.log('[IME] 취소선 태그 발견!');
+//            console.log('[IME] 취소선 태그 발견!');
           }
           if (html.includes('<u>')) {
-            console.log('[IME] 언더라인 태그 발견!');
+//            console.log('[IME] 언더라인 태그 발견!');
           }
           
           const markdown = turndownService.turndown(html);
-          console.log('[IME] 변환된 마크다운:', markdown.substring(0, 100) + '...');
+//          console.log('[IME] 변환된 마크다운:', markdown.substring(0, 100) + '...');
           onChangeRef.current!(markdown);
         }, 100);
       }
@@ -983,12 +917,12 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
   // 모든 변경사항 취소 (사용자별 UndoManager 사용)
   const handleUndoAll = useCallback(() => {
     if (!undoManagerRef.current) {
-      console.log('[UndoManager] UndoManager가 초기화되지 않음');
+//      console.log('[UndoManager] UndoManager가 초기화되지 않음');
       return;
     }
     
-    console.log('[UndoManager] 모든 변경사항 취소 시작');
-    console.log('[UndoManager] 현재 undo 스택 크기:', undoManagerRef.current.undoStack.length);
+//    console.log('[UndoManager] 모든 변경사항 취소 시작');
+//    console.log('[UndoManager] 현재 undo 스택 크기:', undoManagerRef.current.undoStack.length);
     
     // 모든 변경사항을 한 번에 취소
     let undoCount = 0;
@@ -997,7 +931,7 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
       undoCount++;
     }
     
-    console.log(`[UndoManager] ${undoCount}개의 변경사항 취소 완료`);
+//    console.log(`[UndoManager] ${undoCount}개의 변경사항 취소 완료`);
     setCanUndo(false);
   }, []);
 
@@ -1020,22 +954,20 @@ const YjsEditorNew = React.forwardRef<YjsEditorRef, YjsEditorNewProps>(({
         
         const file = item.getAsFile();
         if (file) {
-          console.log('[이미지붙여넣기] 파일 크기:', file.size);
+//          console.log('[이미지붙여넣기] 파일 크기:', file.size);
           
           // 원본 이미지 사용
           const reader = new FileReader();
           reader.onload = (e) => {
             const base64 = e.target?.result as string;
-            console.log('[이미지붙여넣기-에디터레벨] base64 변환 완료');
-            console.log('[이미지붙여넣기-에디터레벨] 원본 크기:', base64.length);
-            
+
             // skipBroadcast 플래그 해제
             skipBroadcastRef.current = false;
             
             // 에디터 commands를 사용하여 Y.js가 자동으로 동기화
             setTimeout(() => {
               editor.chain().focus().setImage({ src: base64 }).run();
-              console.log('[이미지붙여넣기-에디터레벨] 원본 이미지 에디터 명령 실행 완료');
+
             }, 100);
           };
           reader.readAsDataURL(file);
