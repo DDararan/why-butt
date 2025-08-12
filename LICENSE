@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 Orange Wiki Team
+Copyright (c) 2025 KJP
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,10 @@ SOFTWARE.
 
 =================================================================================
 
-Orange Wiki Application
+why-butt (와이벗 위키 시스템)
 Version 1.0.0
 
-이 소프트웨어는 지식 관리 및 문서화를 위한 위키 시스템입니다.
+이 소프트웨어는 Y.js 기반 실시간 협업 위키 시스템입니다.
 
 주요 기능:
 - 위키 페이지 생성 및 편집

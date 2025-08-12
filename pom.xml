@@ -29,6 +29,8 @@
         <jlink.compress>2</jlink.compress>
         <jlink.no.header.files>true</jlink.no.header.files>
         <jlink.no.man.pages>true</jlink.no.man.pages>
+        <!-- OS 플랫폼 설정 (Windows 전용 빌드) -->
+        <os.detected.classifier>windows-x86_64</os.detected.classifier>
     </properties>
 
     <dependencyManagement>
@@ -58,6 +60,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <!-- macOS용 Netty DNS resolver 제외 (Windows 전용 빌드) -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-classes-macos</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -70,6 +83,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
+            <exclusions>
+                <!-- macOS용 Netty DNS resolver 제외 (Windows 전용 빌드) -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-classes-macos</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Database -->
@@ -83,6 +107,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+            <exclusions>
+                <!-- macOS용 Netty DNS resolver 제외 (Windows 전용 빌드) -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-classes-macos</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- JSON Processing -->
@@ -186,7 +221,7 @@
                         </exclude>
                     </excludes>
                     <executable>true</executable>
-                    <jvmArguments>-Xms2048m -Xmx8192m</jvmArguments>
+                    <jvmArguments>-Xms1024m -Xmx8192m</jvmArguments>
                 </configuration>
             </plugin>
             
@@ -228,8 +263,8 @@
                     <type>app-image</type>
                     <javaOptions>
                         <option>-Dspring.profiles.active=prod</option>
-                        <option>-Xmx1g</option>
-                        <option>-Xms512m</option>
+                        <option>-Xms1024m</option>
+                        <option>-Xmx8192m</option>
                         <option>-XX:+UseG1GC</option>
                         <option>-XX:+UseStringDeduplication</option>
                         <option>-Djava.awt.headless=true</option>
