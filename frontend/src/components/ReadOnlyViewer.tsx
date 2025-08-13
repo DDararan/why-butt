@@ -140,22 +140,22 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
   // HTML인지 마크다운인지 판단하여 처리
   let processedContent = content || '';
   
-  // HTML 태그 패턴 확인 (table, p, div, h1-h6 등의 일반적인 HTML 태그들)
-  const isHTML = /<(table|thead|tbody|tr|td|th|p|div|h[1-6]|ul|ol|li|blockquote|pre|code|strong|em|u|s|mark|img|br|hr)[^>]*>/i.test(processedContent);
+  // HTML 태그 패턴 확인 (img 태그 제외하고 확인 - YjsEditorNew 방식과 동일하게)
+  const isHTML = /<(table|thead|tbody|tr|td|th|p|div|h[1-6]|ul|ol|li|blockquote|pre|code|strong|em|u|s|mark|br|hr)[^>]*>/i.test(processedContent);
   
   if (isHTML) {
-    // 이미 HTML인 경우 그대로 사용
+    // 이미 완전한 HTML인 경우 그대로 사용
     console.log('[ReadOnlyViewer] HTML 콘텐츠 감지 - 변환 없이 사용');
     console.log('[ReadOnlyViewer] HTML 시작:', processedContent.substring(0, 100));
     
     // TipTap 에디터에서 생성한 HTML을 직접 사용
     // 별도의 변환 없이 그대로 표시
   } else {
-    // 마크다운인 경우 HTML로 변환
-    console.log('[ReadOnlyViewer] 마크다운 콘텐츠 감지 - HTML로 변환');
+    // 마크다운이거나 마크다운/HTML 혼재인 경우 - YjsEditorNew와 동일한 방식으로 처리
+    console.log('[ReadOnlyViewer] 마크다운 또는 혼재 콘텐츠 감지 - HTML로 변환');
     
     try {
-      // marked 옵션 설정
+      // marked 옵션 설정 (YjsEditorNew와 동일)
       marked.setOptions({
         breaks: true,
         gfm: true,
@@ -174,7 +174,7 @@ const ReadOnlyViewer: React.FC<ReadOnlyViewerProps> = ({ content }) => {
         });
       }
       
-      // 마크다운을 HTML로 변환
+      // 마크다운을 HTML로 변환 (img 태그가 있어도 변환)
       const htmlContent = marked(processedContent) as string;
       console.log('[ReadOnlyViewer_변환] 마크다운 -> HTML:', processedContent.substring(0, 50), ' => ', htmlContent.substring(0, 50));
       console.log('[ReadOnlyViewer_변환] HTML 길이:', htmlContent.length);
