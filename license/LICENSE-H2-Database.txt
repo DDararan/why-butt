@@ -1,0 +1,18 @@
+H2 Database Engine License
+
+This software is dual-licensed under:
+
+1. Eclipse Public License - v 1.0 (EPL-1.0)
+2. Mozilla Public License Version 2.0 (MPL-2.0)
+
+You may choose either license for your use.
+
+For more information:
+- EPL-1.0: https://www.eclipse.org/legal/epl-v10.html
+- MPL-2.0: https://mozilla.org/MPL/2.0/
+
+================================================================================
+H2 Database Engine
+Version: As specified in pom.xml
+License: EPL 1.0 or MPL 2.0
+================================================================================

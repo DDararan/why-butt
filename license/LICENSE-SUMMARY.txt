@@ -1,0 +1,68 @@
+================================================================================
+                        LICENSE SUMMARY FOR WHY-BUTT PROJECT
+================================================================================
+
+This project uses the following open-source libraries with their respective licenses:
+
+BACKEND DEPENDENCIES (Java/Spring Boot):
+----------------------------------------
+1. Spring Boot Framework (3.5.4) - Apache License 2.0
+2. Spring Data JPA - Apache License 2.0
+3. Spring WebSocket - Apache License 2.0
+4. H2 Database - Eclipse Public License 1.0 or Mozilla Public License 2.0
+5. Apache POI (5.2.4) - Apache License 2.0
+6. Jackson (JSON Processing) - Apache License 2.0
+7. Lombok - MIT License
+8. CommonMark (0.21.0) - BSD 2-Clause License
+9. Jsoup (1.16.1) - MIT License
+
+FRONTEND DEPENDENCIES (React/TypeScript):
+-----------------------------------------
+1. React (18.2.0) - MIT License
+2. React-DOM (18.2.0) - MIT License
+3. React Router DOM (6.x) - MIT License
+4. Redux Toolkit - MIT License
+5. Material-UI (@mui/*) - MIT License
+6. TipTap Editor (@tiptap/*) - MIT License
+7. TypeScript (4.9.5) - Apache License 2.0
+8. Y.js (13.6.27) - MIT License
+9. Y-WebSocket - MIT License
+10. Y-IndexedDB - MIT License
+11. Y-Prosemirror - MIT License
+12. Axios (1.7.8) - MIT License
+13. marked (16.1.1) - MIT License
+14. turndown (7.2.0) - MIT License
+15. react-markdown (9.0.1) - MIT License
+16. @dnd-kit/core & @dnd-kit/sortable - MIT License
+17. @emotion/react & @emotion/styled - MIT License
+18. @hocuspocus/* - MIT License
+19. dayjs (1.11.13) - MIT License
+20. sockjs-client (1.6.1) - MIT License
+21. ws (8.18.0) - MIT License
+22. prosemirror-tables (1.7.1) - MIT License
+23. remixicon (4.6.0) - Apache License 2.0
+24. rehype-* plugins - MIT License
+25. remark-* plugins - MIT License
+
+LICENSE FILES:
+--------------
+- LICENSE-Apache-2.0.txt - Full text of Apache License 2.0
+- LICENSE-MIT.txt - Full text of MIT License
+- LICENSE-BSD-2-Clause.txt - Full text of BSD 2-Clause License
+- LICENSE-H2-Database.txt - H2 Database dual license information
+
+COMPLIANCE NOTES:
+-----------------
+1. All Apache 2.0 licensed libraries require attribution in documentation
+2. MIT licensed libraries require copyright notice preservation
+3. BSD licensed libraries require copyright notice and disclaimer preservation
+4. H2 Database offers choice between EPL 1.0 and MPL 2.0
+
+PROJECT LICENSE:
+----------------
+The why-butt project itself is licensed under the MIT License.
+See the LICENSE file in the root directory for details.
+
+================================================================================
+Last Updated: 2025-08-13
+================================================================================
